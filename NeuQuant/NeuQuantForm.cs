@@ -48,9 +48,15 @@ namespace NeuQuant
 
         #endregion
 
+        #region Class Variables
+
         private NeuQuantFile _currentNQFile = null;
         private Processor _currentProcessor = null;
-                
+
+        #endregion
+
+        #region Constructor / Intialization
+
         public NeuQuantForm()
         {
             InitializeComponent();
@@ -107,7 +113,6 @@ namespace NeuQuant
             _xicForm.GraphControl.GraphPane.YAxis.MajorTic.IsInside = false;
             _xicForm.GraphControl.GraphPane.YAxis.MinorTic.IsOutside = true;
             _xicForm.GraphControl.GraphPane.YAxis.MinorTic.IsInside = false;
-            _xicForm.GraphControl.ContextMenuBuilder += GraphControl_ContextMenuBuilder;
             
 
             RefreshGraph(_xicForm.GraphControl);
@@ -142,28 +147,12 @@ namespace NeuQuant
 
             LogMessage(" == " + ProgramVersion + " == ", false);
 
-            LoadNeuQuantFile(@"E:\Desktop\NeuQuant\2plex NeuCode Charger\19February2014_duplex_480K_1to1.sqlite");
+            //LoadNeuQuantFile(@"E:\Desktop\NeuQuant\2plex NeuCode Charger\19February2014_duplex_480K_1to1.sqlite");
 
             base.OnLoad(e);
         }
 
-        void GraphControl_ContextMenuBuilder(ZedGraphControl sender, ContextMenuStrip menuStrip, Point mousePt, ZedGraphControl.ContextMenuObjectState objState)
-        {
-            ToolStripMenuItem item = new ToolStripMenuItem("Show Smoothed");
-            item.CheckOnClick = true;
-            menuStrip.Items.Add(item);
-           
-        }
-        
-        void OnMessage(object sender, MessageEventArgs e)
-        {
-            LogMessage(e.Message, true);
-        }
-
-        void OnProgress(object sender, ProgressEventArgs e)
-        {
-            SetProgress(e.Percent);
-        }
+        #endregion
 
         public void LoadNeuQuantFile(string filePath)
         {
@@ -201,12 +190,21 @@ namespace NeuQuant
                 Text = ProgramVersion + " - " + _currentNQFile.FilePath;
                 DisplayPeptides(_currentNQFile, _peptidesForm);
                 SetStatusText("Ready");
-
-
             }, TaskScheduler.FromCurrentSynchronizationContext());
-            
         }
 
+        #region Feedback
+
+        void OnMessage(object sender, MessageEventArgs e)
+        {
+            LogMessage(e.Message, true);
+        }
+
+        void OnProgress(object sender, ProgressEventArgs e)
+        {
+            SetProgress(e.Percent);
+        }
+        
         public void SetStatusText(string message)
         {
             if (InvokeRequired)
@@ -215,7 +213,7 @@ namespace NeuQuant
                 return;
             }
 
-            statusLabel.Text = message;            
+            statusLabel.Text = message;
         }
 
         public void SetProgress(double percent)
@@ -225,13 +223,13 @@ namespace NeuQuant
                 Invoke(new Action<double>(SetProgress), percent);
                 return;
             }
-                     
-            progressBar.Value = (int)(percent * progressBar.Maximum);       
+
+            progressBar.Value = (int)(percent * progressBar.Maximum);
         }
 
         public void LogMessage(string message, bool timeStamped = true)
         {
-            if(_logForm != null)
+            if (_logForm != null)
                 LogMessage(message, _logForm.TextBox, timeStamped);
         }
 
@@ -242,10 +240,10 @@ namespace NeuQuant
                 Invoke(new Action<string, RichTextBox, bool>(LogMessage), message, richTextBox, timeStamped);
                 return;
             }
-        
+
             if (timeStamped)
             {
-                message =  string.Format("[{0}]\t{1}", DateTime.Now.ToLongTimeString(),message);
+                message = string.Format("[{0}]\t{1}", DateTime.Now.ToLongTimeString(), message);
             }
 
             richTextBox.AppendText(message);
@@ -253,6 +251,8 @@ namespace NeuQuant
             richTextBox.ScrollToCaret();
         }
 
+        #endregion
+        
         #region Graphing
 
         public void ClearGraph(ZedGraphControl control)
@@ -595,43 +595,9 @@ namespace NeuQuant
 
         #endregion
         
-        void PeptideRowEnter(object sender, DataGridViewCellEventArgs e)
-        {
-            DataGridView dgv = sender as DataGridView;
-            if (dgv == null)
-                return;
-
-            DataGridViewRow row = dgv.Rows[e.RowIndex];
-            if (row == null)
-                return;
-
-            NeuQuantPeptide peptide = row.DataBoundItem as NeuQuantPeptide;
-            if (peptide == null)
-                return;
-
-            if (!peptide.ContainsQuantitativeChannel)
-            {
-                ClearGraph(_xicForm.GraphControl);
-                RefreshGraph(_xicForm.GraphControl);
-                ClearGraph(_spacingForm.GraphControl);
-                RefreshGraph(_spacingForm.GraphControl);
-                return;
-            }
-
-            List<NeuQuantFeatureSet> featureSets = _currentProcessor.ExtractFeatureSets(peptide, 3).ToList();
-
-            NeuQuantFeatureSet featureSet = featureSets[0];
-
-            featureSet.FindPeaks(Tolerance.FromPPM(10), 3);
-            featureSet.FindElutionProfile(3);
-
-            PlotXIC(_xicForm.GraphControl, featureSet);
-            PlotSpacing(_spacingForm.GraphControl, featureSet);
-        }
-
         #region Graph Handlers
         
-        void ToggleCurveVisibility(object sender, MouseEventArgs e)
+        private void ToggleCurveVisibility(object sender, MouseEventArgs e)
         {
             ZedGraphControl graphControl = sender as ZedGraphControl;
             if (graphControl == null)
@@ -655,15 +621,20 @@ namespace NeuQuant
             graphControl.Refresh();
         }
 
-        void RetentionTimePlotClick(object sender, MouseEventArgs e)
+        private void RetentionTimePlotClick(object sender, MouseEventArgs e)
         {
             ZedGraphControl graphControl = sender as ZedGraphControl;
             if (graphControl == null)
                 return;
 
+            GraphForm parentForm = graphControl.ParentForm as GraphForm;
+            if (parentForm == null)
+                return;
+
             NeuQuantFeatureSet featureSet = graphControl.Tag as NeuQuantFeatureSet;
             if (featureSet == null)
                 return;
+
 
             double retentionTime, y;
             graphControl.GraphPane.ReverseTransform(e.Location, out retentionTime, out y);
@@ -682,63 +653,38 @@ namespace NeuQuant
             var spectrum = PlotPrecursorSpectrum(_msSpectrumForm.GraphControl, feature);
             if (spectrum == null)
                 return;
-
-            // Clear the old one if it is there            
-            int i = graphControl.GraphPane.GraphObjList.IndexOfTag("ms1Line");
-            if (i >= 0)
-                graphControl.GraphPane.GraphObjList.RemoveAt(i);
             
-            LineObj verticalLine = new LineObj(spectrum.RetentionTime, 0, spectrum.RetentionTime, 1);
-            verticalLine.Line.Color = Color.Green;
-            verticalLine.Location.CoordinateFrame = CoordType.XScaleYChartFraction;
-            verticalLine.ZOrder = ZOrder.D_BehindAxis;
-            verticalLine.Tag = "ms1Line";
-            graphControl.GraphPane.GraphObjList.Add(verticalLine);
-
-            GraphForm parentForm = graphControl.ParentForm as GraphForm;
-            if (parentForm != null)
+            foreach (var graph in parentForm.GraphControls)
             {
-                foreach (GraphForm linkedForm in parentForm.LinkedGraphForms)
-                {
-                    i = linkedForm.GraphControl.GraphPane.GraphObjList.IndexOfTag("ms1Line");
-                    if (i >= 0)
-                        linkedForm.GraphControl.GraphPane.GraphObjList.RemoveAt(i);
+                // Clear the old one if it is there            
+                int i = graph.GraphPane.GraphObjList.IndexOfTag("ms1Line");
+                if (i >= 0)
+                    graph.GraphPane.GraphObjList.RemoveAt(i);
 
-                    linkedForm.GraphControl.GraphPane.GraphObjList.Add(verticalLine);
-                    linkedForm.GraphControl.Refresh();
-                }
+                LineObj verticalLine = new LineObj(spectrum.RetentionTime, 0, spectrum.RetentionTime, 1);
+                verticalLine.Line.Color = Color.Green;
+                verticalLine.Location.CoordinateFrame = CoordType.XScaleYChartFraction;
+                verticalLine.ZOrder = ZOrder.D_BehindAxis;
+                verticalLine.Tag = "ms1Line";
+                graph.GraphPane.GraphObjList.Add(verticalLine);
+
+                graph.Refresh();
             }
+        }
 
-            graphControl.Refresh();
-        } 
-
-        void MoveVerticalLine(object sender, MouseEventArgs e)
+        private void MoveVerticalLine(object sender, MouseEventArgs e)
         {
+            const string tagName = "verticalLine";
             ZedGraphControl graphControl = sender as ZedGraphControl;
             if (graphControl == null)
                 return;
 
-            double x,y;
-            graphControl.GraphPane.ReverseTransform(e.Location, out x, out y);
-
-            // Clear the old one if it is there            
-            int i = graphControl.GraphPane.GraphObjList.IndexOfTag("verticalLine");
-            if(i >= 0)
-                graphControl.GraphPane.GraphObjList.RemoveAt(i);
-
             GraphForm parentForm = graphControl.ParentForm as GraphForm;
-
-            if (parentForm != null && parentForm.LinkedGraphForms.Count > 0)
-            {
-                foreach (GraphForm linkedForm in parentForm.LinkedGraphForms)
-                {
-                    i = linkedForm.GraphControl.GraphPane.GraphObjList.IndexOfTag("verticalLine");
-                    if (i >= 0)
-                        linkedForm.GraphControl.GraphPane.GraphObjList.RemoveAt(i);
-                    linkedForm.GraphControl.Refresh();
-                }
-            }
-
+            if (parentForm == null)
+                return;
+            
+            double x, y;
+            graphControl.GraphPane.ReverseTransform(e.Location, out x, out y);
 
             if (x < graphControl.GraphPane.XAxis.Scale.Min ||
                 x > graphControl.GraphPane.XAxis.Scale.Max ||
@@ -746,33 +692,45 @@ namespace NeuQuant
                 y > graphControl.GraphPane.YAxis.Scale.Max
                 )
             {
-               
+                // hide the old line if it is there       
+                foreach (var graph in parentForm.GraphControls)
+                {
+                    int i = graph.GraphPane.GraphObjList.IndexOfTag(tagName);
+                    if (i >= 0)
+                    {
+                        graph.GraphPane.GraphObjList[i].IsVisible = false;
+                        graph.Refresh();
+                    }
+                }
             }
             else
             {
-                
-                LineObj verticalLine = new LineObj(x, 0, x, 1);
-                verticalLine.Line.Color = Color.DarkCyan;
-                verticalLine.Location.CoordinateFrame = CoordType.XScaleYChartFraction;
-                verticalLine.ZOrder = ZOrder.D_BehindAxis;
-                verticalLine.Tag = "verticalline";
-          
-                if (parentForm != null && parentForm.LinkedGraphForms.Count > 0)
+                foreach (var graph in parentForm.GraphControls)
                 {
-                    foreach (GraphForm linkedForm in parentForm.LinkedGraphForms)
+
+                    int i = graph.GraphPane.GraphObjList.IndexOfTag(tagName);
+                    if (i >= 0)
                     {
-                        linkedForm.GraphControl.GraphPane.GraphObjList.Add(verticalLine);
-                        linkedForm.GraphControl.Refresh();
+                        graph.GraphPane.GraphObjList[i].IsVisible = true;
+                        graph.GraphPane.GraphObjList[i].Location.X = x;
                     }
+                    else
+                    {
+                        LineObj verticalLine = new LineObj(x, 0, x, 1);
+                        verticalLine.Line.Color = Color.DarkCyan;
+                        verticalLine.Location.CoordinateFrame = CoordType.XScaleYChartFraction;
+                        verticalLine.ZOrder = ZOrder.D_BehindAxis;
+                        verticalLine.Tag = tagName;
+
+                        graph.GraphPane.GraphObjList.Add(verticalLine);
+                    }
+
+                    graph.Refresh();
                 }
-
-                graphControl.GraphPane.GraphObjList.Add(verticalLine);
             }
-
-            graphControl.Refresh();
         }
 
-        void GraphControl_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        private void GraphControl_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             if (_currentNQFile == null)
                 return;
@@ -837,7 +795,41 @@ namespace NeuQuant
         }
 
         #endregion
-        
+
+        private void PeptideRowEnter(object sender, DataGridViewCellEventArgs e)
+        {
+            DataGridView dgv = sender as DataGridView;
+            if (dgv == null)
+                return;
+
+            DataGridViewRow row = dgv.Rows[e.RowIndex];
+            if (row == null)
+                return;
+
+            NeuQuantPeptide peptide = row.DataBoundItem as NeuQuantPeptide;
+            if (peptide == null)
+                return;
+
+            if (!peptide.ContainsQuantitativeChannel)
+            {
+                ClearGraph(_xicForm.GraphControl);
+                RefreshGraph(_xicForm.GraphControl);
+                ClearGraph(_spacingForm.GraphControl);
+                RefreshGraph(_spacingForm.GraphControl);
+                return;
+            }
+
+            List<NeuQuantFeatureSet> featureSets = _currentProcessor.ExtractFeatureSets(peptide, 3).ToList();
+
+            NeuQuantFeatureSet featureSet = featureSets[0];
+
+            featureSet.FindPeaks(Tolerance.FromPPM(10), 3);
+            featureSet.FindElutionProfile(3);
+
+            PlotXIC(_xicForm.GraphControl, featureSet);
+            PlotSpacing(_spacingForm.GraphControl, featureSet);
+        }
+
         private void Create()
         {
             Task t = Task.Factory.StartNew(() =>
@@ -877,20 +869,6 @@ namespace NeuQuant
             int count = peptides.Count;
             form.AppendTitle("(" + count + ")");
             LogMessage("Loaded " + count + " peptides.", true);
-        }
-
-        private void DisplayPsms(NeuQuantFile nqFile, DGVForm form)
-        {          
-            SortableBindingList<PeptideSpectrumMatch> psms = new SortableBindingList<PeptideSpectrumMatch>(nqFile.GetPsms());
-            form.DataGridView.DataSource = psms;
-            int count = psms.Count;
-            form.AppendTitle("(" + count + ")");
-            LogMessage("Loaded " + count + " psms.", true);
-        }
-
-        void psmFile_Message(object sender, MessageEventArgs e)
-        {
-            LogMessage(e.Message, true);
         }
         
         private void RegisterForm(Form form)

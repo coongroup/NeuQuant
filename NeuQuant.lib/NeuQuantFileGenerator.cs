@@ -180,9 +180,9 @@ namespace NeuQuant.IO
                 new SQLiteCommand(sql, conn).ExecuteNonQuery();
 
 
-                sql = @"CREATE TABLE IF NOT EXISTS analyses 
+                sql = @"CREATE TABLE IF NOT EXISTS analyses (
                         id INTEGER PRIMARY KEY ASC,
-                        createDate TEXT";
+                        createDate TEXT)";
                 new SQLiteCommand(sql, conn).ExecuteNonQuery();
 
 //                // XICs

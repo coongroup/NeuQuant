@@ -31,6 +31,7 @@ namespace NeuQuant
         {
             IdentifiedChargeStates = new HashSet<int>();
             PeptideSpectrumMatches = new List<PeptideSpectrumMatch>();
+            QuantifiableChannels = new SortedList<double, Peptide>();
         }
 
         public NeuQuantPeptide(PeptideSpectrumMatch psm)
@@ -77,9 +78,6 @@ namespace NeuQuant
 
         private void SetQuantChannels(Peptide peptide)
         {
-            // Storage for all the channels, sorted by mass
-            QuantifiableChannels = new SortedList<double, Peptide>();
-
             // Generate each isotopologue from the peptide and add it to the list
             foreach (var isotopologue in peptide.GenerateIsotopologues())
             {
