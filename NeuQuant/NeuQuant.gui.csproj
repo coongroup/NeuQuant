@@ -1,0 +1,206 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{D84E11F4-A593-433E-8B49-A58812BE4CEC}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>NeuQuant</RootNamespace>
+    <AssemblyName>NeuQuantGUI</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>NeuQuant.Program</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WeifenLuo.WinFormsUI.Docking">
+      <HintPath>..\packages\DockPanelSuite.2.9.0.0\lib\net40\WeifenLuo.WinFormsUI.Docking.dll</HintPath>
+    </Reference>
+    <Reference Include="ZedGraph">
+      <HintPath>..\packages\ZedGraph.5.1.6\lib\net35-Client\ZedGraph.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DGVForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DGVForm.Designer.cs">
+      <DependentUpon>DGVForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GraphForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GraphForm.Designer.cs">
+      <DependentUpon>GraphForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="NeuQuantFileGeneratorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="NeuQuantFileGeneratorForm.Designer.cs">
+      <DependentUpon>NeuQuantFileGeneratorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="NeuQuantForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="NeuQuantForm.Designer.cs">
+      <DependentUpon>NeuQuantForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PsmFileImporter.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="PsmFileImporter.Designer.cs">
+      <DependentUpon>PsmFileImporter.cs</DependentUpon>
+    </Compile>
+    <Compile Include="QuantiativeLabelControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="QuantiativeLabelControl.Designer.cs">
+      <DependentUpon>QuantiativeLabelControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="QuantiativeLabelManagerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="QuantiativeLabelManagerForm.Designer.cs">
+      <DependentUpon>QuantiativeLabelManagerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TextBoxForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TextBoxForm.Designer.cs">
+      <DependentUpon>TextBoxForm.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="DGVForm.resx">
+      <DependentUpon>DGVForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GraphForm.resx">
+      <DependentUpon>GraphForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NeuQuantFileGeneratorForm.resx">
+      <DependentUpon>NeuQuantFileGeneratorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NeuQuantForm.resx">
+      <DependentUpon>NeuQuantForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <EmbeddedResource Include="PsmFileImporter.resx">
+      <DependentUpon>PsmFileImporter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="QuantiativeLabelControl.resx">
+      <DependentUpon>QuantiativeLabelControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="QuantiativeLabelManagerForm.resx">
+      <DependentUpon>QuantiativeLabelManagerForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TextBoxForm.resx">
+      <DependentUpon>TextBoxForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="License-LGPL.txt" />
+    <Content Include="license.txt" />
+    <None Include="Resources\add2-16.png" />
+    <None Include="Resources\Image1.bmp" />
+    <None Include="Resources\add1-128.png" />
+    <None Include="Resources\add1-16.png" />
+    <None Include="Resources\add2-32.png" />
+    <None Include="Resources\close16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\CSMSL\CSMSL\CSMSL.csproj">
+      <Project>{3c8c9f05-9c19-4251-95fa-05d7edc8cae6}</Project>
+      <Name>CSMSL</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\CSMSL\CSMSL\IO\Thermo\Thermo.csproj">
+      <Project>{24dc85ff-e97b-4140-9614-77dd8fddd32f}</Project>
+      <Name>Thermo</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NeuQuant.lib\NeuQuant.lib.csproj">
+      <Project>{a6bca6ed-9e17-4846-a7e3-c1d16f5878dd}</Project>
+      <Name>NeuQuant.lib</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
