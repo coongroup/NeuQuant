@@ -1,17 +1,22 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.30110.0
-MinimumVisualStudioVersion = 10.0.40219.1
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuQuant.gui", "NeuQuant\NeuQuant.gui.csproj", "{D84E11F4-A593-433E-8B49-A58812BE4CEC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuQuant.lib", "NeuQuant.lib\NeuQuant.lib.csproj", "{A6BCA6ED-9E17-4846-A7E3-C1D16F5878DD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSMSL", "..\..\CSMSL\CSMSL\CSMSL.csproj", "{3C8C9F05-9C19-4251-95FA-05D7EDC8CAE6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSMSL", "..\CSMSL\CSMSL\CSMSL.csproj", "{3C8C9F05-9C19-4251-95FA-05D7EDC8CAE6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thermo", "..\..\CSMSL\CSMSL\IO\Thermo\Thermo.csproj", "{24DC85FF-E97B-4140-9614-77DD8FDDD32F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thermo", "..\CSMSL\CSMSL\IO\Thermo\Thermo.csproj", "{24DC85FF-E97B-4140-9614-77DD8FDDD32F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OMSSA", "..\..\CSMSL\CSMSL\IO\OMSSA\OMSSA.csproj", "{45A71E18-42E8-41A4-9479-2852C4186993}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OMSSA", "..\CSMSL\CSMSL\IO\OMSSA\OMSSA.csproj", "{45A71E18-42E8-41A4-9479-2852C4186993}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{B1782505-ADF7-4887-B5EA-A118C4AC0AAF}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
