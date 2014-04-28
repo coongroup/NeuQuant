@@ -45,6 +45,7 @@ namespace NeuQuant
         private DGVForm _peptidesForm;
         private NeuQuantFileGeneratorForm _nqFileGeneratorForm;
         private QuantiativeLabelManagerForm _labelManagerForm;
+        private TreeViewForm _analysesForm;
 
         #endregion
 
@@ -142,17 +143,23 @@ namespace NeuQuant
             _labelManagerForm.DockPanel = dockPanel1;
             RegisterForm(_labelManagerForm);
 
+            _analysesForm = new TreeViewForm("Analyses");
+            _analysesForm.Show(dockPanel1, DockState.DockRight);
+            RegisterForm(_analysesForm);
+
             // Link this two forms together so their events are reflected in both
             _spacingForm.LinkForms(_xicForm);
 
             LogMessage(" == " + ProgramVersion + " == ", false);
 
-            //LoadNeuQuantFile(@"E:\Desktop\NeuQuant\2plex NeuCode Charger\19February2014_duplex_480K_1to1.sqlite");
+            LoadNeuQuantFile(@"E:\Desktop\NeuQuant\2plex NeuCode Charger\19February2014_duplex_480K_1to1.sqlite");
 
             base.OnLoad(e);
         }
 
         #endregion
+
+        #region File Loading
 
         public void LoadNeuQuantFile(string filePath)
         {
@@ -188,10 +195,15 @@ namespace NeuQuant
             }).ContinueWith((t2) =>
             {               
                 Text = ProgramVersion + " - " + _currentNQFile.FilePath;
+                LoadAnalyses(_currentNQFile, _analysesForm);
                 DisplayPeptides(_currentNQFile, _peptidesForm);
                 SetStatusText("Ready");
             }, TaskScheduler.FromCurrentSynchronizationContext());
         }
+
+      
+
+        #endregion
 
         #region Feedback
 
@@ -844,6 +856,30 @@ namespace NeuQuant
             }).ContinueWith((t2) => LoadNeuQuantFile(@"E:\Desktop\NeuQuant\2plex NeuCode Charger\19February2014_duplex_480K_1to1.sqlite"), TaskScheduler.FromCurrentSynchronizationContext());
         }
 
+        private void LoadAnalyses(NeuQuantFile nqFile, TreeViewForm treeForm)
+        {
+            if (nqFile == null)
+                return;
+
+            List<NeuQuantAnalysis> analyses = nqFile.GetAnalyses().ToList();
+
+           // treeForm.TreeView.Nodes.Clear();
+
+            foreach (NeuQuantAnalysis analysis in analyses)
+            {
+                TreeNode node = treeForm.TreeView.Nodes[analysis.Name];
+                if(node == null)
+                    node = treeForm.TreeView.Nodes.Add(analysis.Name, analysis.Name);
+
+                foreach (KeyValuePair<DateTime, long> kvp in analysis.Analyses)
+                {
+                    TreeNode leafNode = node.Nodes[kvp.Key.ToString()];
+                    if (leafNode == null)
+                        node.Nodes.Add(kvp.Key.ToString(), kvp.Key.ToLocalTime().ToLongTimeString());
+                }
+            }
+        }
+
         private void DisplayPeptides(NeuQuantFile nqFile, DGVForm form)
         {
             SortableBindingList<NeuQuantPeptide> peptides = new SortableBindingList<NeuQuantPeptide>(nqFile.GetPeptides());
@@ -944,6 +980,7 @@ namespace NeuQuant
                 processor.Message += OnMessage;
 
                 processor.Open();
+                processor.SaveAnalysisParameters("Analysis 2");
                 processor.GetPeptides();
                 processor.FilterPeptides();
                 processor.ExtractFeatureSets();
@@ -953,7 +990,9 @@ namespace NeuQuant
 
                 processor.Progress -= OnProgress;
                 processor.Message -= OnMessage;
-            });
+                ;
+            }).ContinueWith((t2) => LoadAnalyses(_currentNQFile, _analysesForm), TaskScheduler.FromCurrentSynchronizationContext());
+            
         }
 
         private void goToolStripMenuItem_Click(object sender, EventArgs e)

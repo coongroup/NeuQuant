@@ -13,7 +13,7 @@ namespace NeuQuant.Processing
 
             foreach (NeuQuantFeatureSet featureSet in FeatureSets)
             {
-                featureSet.FindPeaks(MS2Tolerance, NumberOfIsotopesToQuantify, SystematicError, UseIsotopicDistribution, IsotopicDistributionPercentError);
+                featureSet.FindPeaks(MS2Tolerance, NumberOfIsotopesToQuantify, SystematicPPMError, UseIsotopicDistribution, IsotopicDistributionPercentError);
                 
                 featureSet.FindElutionProfile(3);
                 

@@ -1,4 +1,5 @@
-﻿using CSMSL.Proteomics;
+﻿using System.Collections.Generic;
+using CSMSL.Proteomics;
 
 namespace NeuQuant
 {
@@ -36,7 +37,7 @@ namespace NeuQuant
         public static Isotopologue K8Plex3 = new Isotopologue("K8_3", ModificationSites.K);
 
         public static Isotopologue K8SilacPlex2 = new Isotopologue("K8SilacPlex2", ModificationSites.K);
-              
+        
         static Reagents()
         {
             // Standard Duplex

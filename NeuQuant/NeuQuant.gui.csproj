@@ -123,6 +123,12 @@
     <Compile Include="TextBoxForm.Designer.cs">
       <DependentUpon>TextBoxForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="TreeViewForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TreeViewForm.Designer.cs">
+      <DependentUpon>TreeViewForm.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="DGVForm.resx">
       <DependentUpon>DGVForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -156,6 +162,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="TextBoxForm.resx">
       <DependentUpon>TextBoxForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TreeViewForm.resx">
+      <DependentUpon>TreeViewForm.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

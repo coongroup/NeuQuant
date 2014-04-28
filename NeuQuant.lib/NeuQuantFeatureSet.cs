@@ -268,7 +268,40 @@ namespace NeuQuant
 
         private void SilacFindPeaks(Tolerance peakTolerance, int numberOfIsotopes, double systematicThError, bool checkIsotopicDistribuition, double isotopicPercentError)
         {
-            throw new NotImplementedException();
+             // Loop over all the spectra in the feature
+            foreach (var miniSpectrum in Spectra)
+            {
+                // Create a new feature for this spectrum
+                NeuQuantFeature feature = new NeuQuantFeature(this, miniSpectrum);
+                
+                // Loop over each peptide (should be in its own cluster)
+                foreach (var peptide in Peptide.QuantifiableChannels.Values)
+                {
+                    // Loop over each isotope
+                    for (int isotope = 0; isotope < numberOfIsotopes; isotope++)
+                    {
+                        // Storage for the smallest and largest m/z in this cluster for this isotope
+                        double mz = peptide.ToMz(ChargeState, isotope);
+           
+                        // Construct the m/z range of interest
+                        MzRange mzRange = new MzRange(mz, peakTolerance);
+
+                        // Extract the m/z range from the mini spectrum into its own, even smaller, tiny spectrum
+                        // The mini spectrum may contain multiple clusters, so this step further divides that spectrum
+                        // into a smaller spectrum, a memory optimization
+                        var tinySpectrum = miniSpectrum.Extract(mzRange, systematicThError);
+
+                        // Try to assign the peaks to the correct channel
+                        feature.AssignPeaks(tinySpectrum, peptide, isotope, mzRange);
+                    }
+
+                    // Once all the isotopes peaks are assigned, perform the isotopic distribution check
+                    feature.CheckIsotopicDistribution(1, isotopicPercentError, checkIsotopicDistribuition);
+                }
+
+                // Store the feature
+                _features.Add(feature);
+            }
         }
 
         private void NeuCodeFindPeaks(Tolerance peakTolerance, int numberOfIsotopes = 3, double systematicThError = 0.0, bool checkIsotopicDistribuition = true, double isotopicPercentError = 0.25)
@@ -345,19 +378,31 @@ namespace NeuQuant
             return _features[GetFeatureIndex(retentionTime)];
         }
 
-        public IEnumerable<double> PrecursorMassError(Peptide channel, double ppmRange = 25)
+        public IEnumerable<double> PrecursorMassError(Peptide channel, int isotopes = 3, double ppmRange = 15)
         {
-            double mz = channel.ToMz(ChargeState, 0);
-            DoubleRange range = DoubleRange.FromPPM(mz, ppmRange);
-
-             // Loop over all the spectra in the feature
-            foreach (var miniSpectrum in Spectra)
+            for (int i = 0; i < isotopes; i++)
             {
-                IPeak peak = miniSpectrum.GetClosestPeak(range);
-                if (peak != null)
+                double mz = channel.ToMz(ChargeState, i);
+                DoubleRange range = DoubleRange.FromPPM(mz, ppmRange);
+
+                // Loop over all the spectra in the feature
+                foreach (var miniSpectrum in Spectra)
                 {
-                    yield return peak.X - mz;
+                    IPeak peak = miniSpectrum.GetClosestPeak(range);
+                    if (peak != null)
+                    {
+                        yield return Tolerance.GetTolerance(peak.X, mz, ToleranceType.PPM);
+                    }
                 }
+            }
+        }
+
+        public IEnumerable<double> PrecursorMassError(int isotopes = 3, double ppmRange = 15)
+        {
+            foreach (var peptide in Peptide.QuantifiableChannels.Values)
+            {
+                foreach (double error in PrecursorMassError(peptide, isotopes, ppmRange))
+                    yield return error;
             }
         }
 

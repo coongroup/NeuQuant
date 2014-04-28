@@ -32,6 +32,9 @@ namespace NeuQuant.IO
         private SQLiteCommand _insertPSM;
         private SQLiteCommand _insertMod;
 
+        private SQLiteCommand _insertAnalysis;
+        private SQLiteCommand _insertAnalysisParameter;
+
         private SQLiteCommand _selectPeptide;
         
         private long _currentSpectrumID = 0;
@@ -50,6 +53,8 @@ namespace NeuQuant.IO
             _selectPrecursorSpectrum = new SQLiteCommand(@"SELECT * FROM spectra WHERE msnOrder = 1 AND retentionTime BETWEEN @minRT AND @maxRT AND fileID = (SELECT id FROM files WHERE filePath = @filePath) AND resolution >= @minResolution ORDER BY ABS(retentionTIme - @rt) LIMIT 1", _dbConnection);
             _selectPeptide = new SQLiteCommand(@"SELECT id FROM peptides WHERE sequence = @sequence AND monoMass = @monoMass", _dbConnection);
             _selectModification = new SQLiteCommand(@"SELECT id FROM modifications WHERE name = @name" , _dbConnection);
+            _insertAnalysis = new SQLiteCommand(@"INSERT INTO analyses (createDate, name) VALUES (DateTime('now'), @name)", _dbConnection);
+            _insertAnalysisParameter = new SQLiteCommand(@"INSERT INTO analysisParameters (analysisID, key, value) VALUES (@analysisID, @key, @value)", _dbConnection);
         }        
 
         public bool Open()
@@ -223,6 +228,36 @@ namespace NeuQuant.IO
                 }
             }       
         }
+
+        public IEnumerable<NeuQuantAnalysis> GetAnalyses()
+        {
+            var selectAnalyses = new SQLiteCommand(@"SELECT * FROM analyses ORDER BY NAME", _dbConnection);
+
+            Dictionary<string, ThermoRawFile> rawFiles = new Dictionary<string, ThermoRawFile>();
+            using (var reader = selectAnalyses.ExecuteReader())
+            {
+                string lastID = "";
+                NeuQuantAnalysis analysis = null;
+                while (reader.Read())
+                {
+                    string name = (string)reader["name"];
+                    if (name != lastID)
+                    {
+                        if (analysis != null)
+                            yield return analysis;
+
+                        analysis = new NeuQuantAnalysis(name);
+                        lastID = name;
+                    }
+
+                    long id = (long)reader["id"];
+                    string date = (string)reader["createDate"];
+                    analysis.AddAnalysis(date, id);
+                }
+                if (analysis != null)
+                    yield return analysis;
+            }
+        } 
 
         private long InsertSpectrum(NeuQuantSpectrum spectrum, long fileID, bool compress = true)
         {
@@ -402,6 +437,22 @@ namespace NeuQuant.IO
                                     VALUES ("+peptideID+",(SELECT id FROM modifications WHERE name = '"+mod.Name+"'),"+i+")", _dbConnection).ExecuteNonQuery();
                 }
             }
+        }
+
+        public void SaveAnalysisParameter(long id, string key, string value)
+        {
+            _insertAnalysisParameter.Parameters.AddWithValue("@analysisID", id);
+            _insertAnalysisParameter.Parameters.AddWithValue("@key", key);
+            _insertAnalysisParameter.Parameters.AddWithValue("@value", value);
+            _insertAnalysisParameter.ExecuteNonQuery();
+        }
+
+        public long SaveAnalysis(string analysisName = "")
+        {
+            _insertAnalysis.Parameters.AddWithValue("@name", analysisName);
+            _insertAnalysis.ExecuteNonQuery();
+            long analysisID = _dbConnection.LastInsertRowId;
+            return analysisID;
         }
 
         public SQLiteTransaction BeginTransaction()

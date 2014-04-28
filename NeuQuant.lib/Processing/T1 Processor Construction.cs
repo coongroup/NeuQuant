@@ -1,4 +1,5 @@
-﻿using CSMSL;
+﻿using System.IO;
+using CSMSL;
 using CSMSL.Chemistry;
 using NeuQuant.IO;
 using System;
@@ -9,17 +10,17 @@ namespace NeuQuant.Processing
     public partial class Processor : IDisposable
     {
         protected NeuQuantFile NqFile;
-        protected int NumberOfIsotopesToQuantify;
-        protected double MinimumRtDelta;
-        protected double MaximumRtDelta;
-        protected Tolerance MS2Tolerance;
+        public int NumberOfIsotopesToQuantify { get; set; }
+        public double MinimumRtDelta { get; set; }
+        public double MaximumRtDelta { get; set; }
+        public Tolerance MS2Tolerance { get; set; }
 
-        protected double MinimumSN = 3;
-        protected double MaximumSN = double.MaxValue;
-        protected double MinimumResolution = 0;
-        protected double MaximumRtRangePerFeature = 3;
+        public double MinimumSN { get; set; }
+        public double MaximumSN { get; set; }
+        public double MinimumResolution { get; set; }
+        public double MaximumRtRangePerFeature  { get; set; }
 
-        protected double IsotopicDistributionPercentError = 0.25;
+        public double IsotopicDistributionPercentError { get; set; }
 
         protected bool UseIsotopicDistribution = true;
 
@@ -27,6 +28,8 @@ namespace NeuQuant.Processing
         protected Predicate<NeuQuantPeptide> Resolvable;
         
         public bool IsOpen { get; private set; }
+
+        public string BaseDirectory { get { return Path.GetDirectoryName(NqFile.FilePath); } }
 
         public Processor(NeuQuantFile nqFile, int isotopesToQuantify = 3, double minRtDelta = 0.25, double maxRtDelta = 0.25, double resolution = 240000, double resolutionAt = 400, double quantAtPeakHeight = 10, bool checkIsotopicDistribution = true)
         {
@@ -38,6 +41,11 @@ namespace NeuQuant.Processing
             MinimumResolution = resolution/2 + 1;
 
             UseIsotopicDistribution = checkIsotopicDistribution;
+            
+            MinimumSN = 3;
+            MaximumSN = double.MaxValue;
+            IsotopicDistributionPercentError = 0.25;
+            MaximumRtRangePerFeature = 3;
 
             double coefficient = Math.Sqrt(Math.Log(100.0 / quantAtPeakHeight)) / Math.Sqrt(Math.Log(2));
             TheoreticalSpacing = (mass, charge) =>
@@ -69,6 +77,21 @@ namespace NeuQuant.Processing
 
            
             //TODO Save Analysis Parameters in NeuQuant File
+        }
+
+        public void SaveAnalysisParameters(string analysisName = "")
+        {
+            NqFile.BeginTransaction();
+
+            long analysisID = NqFile.SaveAnalysis(analysisName);
+
+            // handy: http://stackoverflow.com/questions/737151/how-to-get-the-list-of-properties-of-a-class
+            foreach(var prop in GetType().GetProperties())
+            {
+                NqFile.SaveAnalysisParameter(analysisID, prop.Name, prop.GetValue(this, null).ToString());
+            }
+
+            NqFile.EndTranscation();
         }
 
         #region Close/Dispose

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using CSMSL;
 
@@ -12,26 +13,30 @@ namespace NeuQuant.Processing
             Median
         }
 
-        public double SystematicError { get; private set; }
+        public double SystematicPPMError { get; private set; }
 
         public double CalculateSystematicError()
         {
             OnMessage("Calculating Systematic Error...");
-            SystematicError = CalculateSystematicError(FeatureSets);
-            return SystematicError;
+            SystematicPPMError = CalculateSystematicError(FeatureSets);
+            return SystematicPPMError;
         }
 
-        public static double CalculateSystematicError(IEnumerable<NeuQuantFeatureSet> features, SystematicErrorType type = SystematicErrorType.Median)
+        public static double CalculateSystematicError(IEnumerable<NeuQuantFeatureSet> features, int numberOfIsotopes = 1, SystematicErrorType type = SystematicErrorType.Median)
         {
             List<double> massErrors = new List<double>();
             foreach (var feature in features)
             {
-                // Only use features without labels
-                //if(feature.Peptide.ContainsQuantitativeChannel)
-                //   continue;
-
-                massErrors.AddRange(feature.PrecursorMassError(feature.Peptide.QuantifiableChannels.Values[0]));
+                massErrors.AddRange(feature.PrecursorMassError(numberOfIsotopes));
             }
+
+            //using (StreamWriter writer = new StreamWriter(@"E:\Desktop\NeuQuant\2plex NeuCode Charger\ppmErrors.csv"))
+            //{
+            //    foreach (double massError in massErrors)
+            //    {
+            //        writer.WriteLine(massError);
+            //    }
+            //}
 
             switch (type)
             {

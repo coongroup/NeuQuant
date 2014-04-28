@@ -78,19 +78,21 @@ namespace NeuQuant
             return nqSpectrum;
         }
 
-        public new NeuQuantSpectrum Extract(IRange<double> range, double systematicError = 0.0)
+        public new NeuQuantSpectrum Extract(IRange<double> range, double systematicPPMError = 0.0)
         {
             var spectrum = base.Extract(range);
             if (spectrum == null)
                 return null;
             NeuQuantSpectrum nqSpectrum;
 
-            if (systematicError != 0.0)
+            if (systematicPPMError != 0.0)
             {
+                // Multiplicative coefficient to translate m/z based on ppm mass error
+                double coefficient = 1 / ((systematicPPMError/1e6) + 1);
                 double[] masses = spectrum.GetMasses();
                 for (int i = 0; i < masses.Length; i++)
                 {
-                    masses[i] -= systematicError;
+                    masses[i] *= coefficient;
                 }
                 nqSpectrum = new NeuQuantSpectrum(masses, spectrum.GetIntensities());
             }

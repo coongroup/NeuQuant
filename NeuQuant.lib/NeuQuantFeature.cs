@@ -247,6 +247,22 @@ namespace NeuQuant
             return (_usedIsotopes & mask) != 0 && (_spacingIsotopes & mask) != 0;
         }
 
+        public int AssignPeaks(NeuQuantSpectrum spectrum, Peptide channel, int isotope, DoubleRange mzRange)
+        {
+            // Cannot assign what does not exist
+            if (spectrum == null || spectrum.Count == 0)
+                return 0;
+            
+            IPeak peak = spectrum.GetClosestPeak(mzRange);
+
+            if (AddChannel(channel, peak, isotope))
+            {
+                _spacingIsotopes |= (1 << isotope);
+            }
+
+            return 1;
+        }
+
         /// <summary>
         /// Tries to assigns the peaks in the spectrum to the correct channels.
         /// </summary>

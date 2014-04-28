@@ -179,11 +179,19 @@ namespace NeuQuant.IO
                         modificationID INT,                 
                         PRIMARY KEY (sampleID, modificationID) ON CONFLICT IGNORE)";
                 new SQLiteCommand(sql, conn).ExecuteNonQuery();
-
-
+                
                 sql = @"CREATE TABLE IF NOT EXISTS analyses (
                         id INTEGER PRIMARY KEY ASC,
-                        createDate TEXT)";
+                        createDate TEXT,
+                        name TEXT,
+                        UNIQUE (createDate, name) ON CONFLICT IGNORE)";
+                new SQLiteCommand(sql, conn).ExecuteNonQuery();
+
+                sql = @"CREATE TABLE IF NOT EXISTS analysisParameters (
+                        id INTEGER PRIMARY KEY ASC,
+                        analysisID INT,
+                        key TEXT,
+                        value TEXT)";
                 new SQLiteCommand(sql, conn).ExecuteNonQuery();
 
 //                // XICs

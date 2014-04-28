@@ -86,6 +86,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MessageEventArgs.cs" />
+    <Compile Include="NeuQuantAnalysis.cs" />
     <Compile Include="NeuQuantFeature.cs" />
     <Compile Include="NeuQuantFeatureSet.cs" />
     <Compile Include="NeuQuantFile.cs" />
