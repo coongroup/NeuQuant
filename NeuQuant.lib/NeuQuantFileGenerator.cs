@@ -109,7 +109,8 @@ namespace NeuQuant.IO
                         retentionTime REAL,                  
                         charge INT,
                         isoMZ REAL,
-                        matchScore REAL)";
+                        matchScore REAL,
+                        scoreType INT)";
                         //FOREIGN KEY(peptideID) REFERENCES peptides(id),
                         //FOREIGN KEY(spectrumID) REFERENCES spectra(id),                        
                 new SQLiteCommand(sql, conn).ExecuteNonQuery();
@@ -132,11 +133,11 @@ namespace NeuQuant.IO
                             (SELECT 1 FROM peptides
                             WHERE sequence = NEW.sequence AND monoMass = NEW.monoMass);
 
-                        INSERT INTO psms (peptideID, charge, isoMZ, matchScore, spectrumID, retentionTime) VALUES
+                        INSERT INTO psms (peptideID, charge, isoMZ, matchScore, spectrumID, retentionTime, scoreType) VALUES
                         ((SELECT peptides.id FROM peptides WHERE peptides.sequence = NEW.sequence AND monoMass = NEW.monoMass), 
                         NEW.charge, NEW.isoMZ, NEW.matchScore, 
                         (SELECT spectra.id FROM spectra INNER JOIN files f ON f.id = spectra.fileID WHERE f.filePath = NEW.filePath AND spectra.scannumber = NEW.scannumber),
-                        NEW.retentionTime);                                
+                        NEW.retentionTime, NEW.scoreType);                                
 
                         END";
                 new SQLiteCommand(sql, conn).ExecuteNonQuery();

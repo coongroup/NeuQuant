@@ -44,7 +44,7 @@ namespace NeuQuant.IO
             _selectFile = new SQLiteCommand("SELECT id FROM files WHERE filePath = @filePath LIMIT 1", _dbConnection);
             _insertSpectrum = new SQLiteCommand(@"INSERT INTO spectra (fileID, scannumber, retentionTime, msnOrder, resolution, injectionTime, spectrum) VALUES (@fileID, @scannumber,@retentionTime,@msnOrder,@resolution,@injectionTime,@spectrum)", _dbConnection);
             _selectSpectrum = new SQLiteCommand(@"SELECT * FROM spectra WHERE msnOrder = @msnOrder AND fileID = @fileID AND retentionTime BETWEEN @minRT AND @maxRT AND resolution >= @minResolution", _dbConnection);
-            _insertPSM = new SQLiteCommand(@"INSERT INTO psm_peptide_view (sequence, monoMass, charge, isoMZ, matchScore, scannumber, retentionTime, filePath) VALUES (@sequence, @monoMass, @charge, @isoMZ, @matchScore, @scannumber, @retentionTime, @filePath)", _dbConnection);
+            _insertPSM = new SQLiteCommand(@"INSERT INTO psm_peptide_view (sequence, monoMass, charge, isoMZ, matchScore, scannumber, retentionTime, filePath, scoreType) VALUES (@sequence, @monoMass, @charge, @isoMZ, @matchScore, @scannumber, @retentionTime, @filePath, @scoreType)", _dbConnection);
             _insertMod = new SQLiteCommand(@"INSERT INTO modifications (name, sites, deltaMass, isVariable, type) VALUES (@name, @sites, @deltaMass, @isVariable, @type)", _dbConnection);
             _selectIndividualSpectrum = new SQLiteCommand(@"SELECT * FROM spectra WHERE scannumber = @scannumber AND fileID = (SELECT id FROM files WHERE filePath = @filePath)", _dbConnection);
             _selectPrecursorSpectrum = new SQLiteCommand(@"SELECT * FROM spectra WHERE msnOrder = 1 AND retentionTime BETWEEN @minRT AND @maxRT AND fileID = (SELECT id FROM files WHERE filePath = @filePath) AND resolution >= @minResolution ORDER BY ABS(retentionTIme - @rt) LIMIT 1", _dbConnection);
@@ -153,7 +153,7 @@ namespace NeuQuant.IO
         {
             Dictionary<long, Modification> modifications = GetModifications();
 
-            var selectPSMs = new SQLiteCommand(@"SELECT psms.id AS psmID, m.id AS modID, sequence, charge, isoMZ, matchScore, position, scannumber, filePath, psms.retentionTime
+            var selectPSMs = new SQLiteCommand(@"SELECT psms.id AS psmID, m.id AS modID, sequence, charge, isoMZ, matchScore, position, scannumber, filePath, psms.retentionTime, scoreType
                                                 FROM psms 
                                                 INNER JOIN peptides pep
                                                 ON psms.peptideID = pep.id
@@ -178,6 +178,7 @@ namespace NeuQuant.IO
                 double isoMZ = 0;
                 double score = 0;
                 double rt = 0;
+                PeptideSpectrumMatchScoreType scoreType = PeptideSpectrumMatchScoreType.Unknown;;
                 while (reader.Read())
                 {
                     long currentPSMid = (long)reader["psmID"];
@@ -186,7 +187,7 @@ namespace NeuQuant.IO
                     {
                         if (peptide != null)
                         {
-                            yield return new PeptideSpectrumMatch(rawFile, spectrumNumber,rt, peptide, charge, isoMZ, score);
+                            yield return new PeptideSpectrumMatch(rawFile, spectrumNumber, rt, peptide, charge, isoMZ, score, scoreType);
                         }
                         lastPSMid = currentPSMid;
                         string sequence = reader["sequence"].ToString();
@@ -196,6 +197,7 @@ namespace NeuQuant.IO
                         score = (double)reader["matchScore"];
                         spectrumNumber = (int)reader["scannumber"];
                         rt = (double)reader["retentionTime"];
+                        scoreType = (PeptideSpectrumMatchScoreType) reader["scoreType"];
                         string rawFilePath = reader["filePath"].ToString();
                         if (!rawFiles.TryGetValue(rawFilePath, out rawFile))
                         {
@@ -217,7 +219,7 @@ namespace NeuQuant.IO
                 // Return the last psm
                 if (peptide != null)
                 {
-                    yield return new PeptideSpectrumMatch(rawFile, spectrumNumber, rt, peptide, charge, isoMZ, score);
+                    yield return new PeptideSpectrumMatch(rawFile, spectrumNumber, rt, peptide, charge, isoMZ, score, scoreType);
                 }
             }       
         }
@@ -379,6 +381,7 @@ namespace NeuQuant.IO
             _insertPSM.Parameters.AddWithValue("@charge", psm.Charge);
             _insertPSM.Parameters.AddWithValue("@isoMZ", psm.IsolationMZ);
             _insertPSM.Parameters.AddWithValue("@matchScore", psm.MatchScore);
+            _insertPSM.Parameters.AddWithValue("@scoreType", psm.MatchType);
             _insertPSM.Parameters.AddWithValue("@scannumber", psm.SpectrumNumber);
             _insertPSM.Parameters.AddWithValue("@retentionTime", psm.RetentionTime);
             _insertPSM.Parameters.AddWithValue("@filePath", psm.RawFile.FilePath);

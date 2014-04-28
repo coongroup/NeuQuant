@@ -91,8 +91,9 @@
     <Compile Include="Processing\T1 Processor Construction.cs" />
     <Compile Include="Processing\T2 Filter Peptides.cs" />
     <Compile Include="Processing\T3 Feature Extraction.cs" />
-    <Compile Include="Processing\T4 Peak Extraction.cs" />
-    <Compile Include="Processing\T5 Peak Quantification.cs" />
+    <Compile Include="Processing\T4 Systematic Mass Error.cs" />
+    <Compile Include="Processing\T5 Peak Extraction.cs" />
+    <Compile Include="Processing\T6 Peak Quantification.cs" />
     <Compile Include="ProgressEventArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="NeuQuantSpectrum.cs" />

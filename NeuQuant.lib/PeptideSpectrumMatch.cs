@@ -1,11 +1,5 @@
 ﻿using CSMSL.IO.Thermo;
 using CSMSL.Proteomics;
-using CSMSL.Spectral;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NeuQuant
 {
@@ -23,7 +17,7 @@ namespace NeuQuant
         public double MatchScore { get; private set; }  
         public PeptideSpectrumMatchScoreType MatchType { get; private set; }
 
-        public PeptideSpectrumMatch(ThermoRawFile rawFile, int spectrumNumber,double retentionTime, Peptide peptide, int charge, double isoMZ, double score)
+        public PeptideSpectrumMatch(ThermoRawFile rawFile, int spectrumNumber,double retentionTime, Peptide peptide, int charge, double isoMZ, double score, PeptideSpectrumMatchScoreType scoreType)
         {
             RawFile = rawFile;
             SpectrumNumber = spectrumNumber;
@@ -32,7 +26,12 @@ namespace NeuQuant
             Charge = charge;
             IsolationMZ = isoMZ;
             MatchScore = score;
+            MatchType = scoreType;
         }
-      
+
+        public override string ToString()
+        {
+            return string.Format("{0} RT: {1:F2} Z: {2:N0} Score: {3:G4}", Peptide, RetentionTime, Charge, MatchScore);
+        }
     }
 }
