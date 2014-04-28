@@ -16,15 +16,21 @@ namespace NeuQuant.Processing
 
         public double CalculateSystematicError()
         {
-            SystematicError = CalculateSystematicError(AllPeptides.Where(peptide => !peptide.ContainsQuantitativeChannel));
+            OnMessage("Calculating Systematic Error...");
+            SystematicError = CalculateSystematicError(FeatureSets);
+            return SystematicError;
         }
 
-        public static double CalculateSystematicError(IEnumerable<NeuQuantPeptide> peptides, SystematicErrorType type = SystematicErrorType.Median)
+        public static double CalculateSystematicError(IEnumerable<NeuQuantFeatureSet> features, SystematicErrorType type = SystematicErrorType.Median)
         {
             List<double> massErrors = new List<double>();
-            foreach (var peptide in peptides)
+            foreach (var feature in features)
             {
-                
+                // Only use features without labels
+                //if(feature.Peptide.ContainsQuantitativeChannel)
+                //   continue;
+
+                massErrors.AddRange(feature.PrecursorMassError(feature.Peptide.QuantifiableChannels.Values[0]));
             }
 
             switch (type)

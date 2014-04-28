@@ -91,6 +91,7 @@
     <Compile Include="NeuQuantFile.cs" />
     <Compile Include="NeuQuantFileGenerator.cs" />
     <Compile Include="NeuQuantPeptide.cs" />
+    <Compile Include="NeuQuantSample.cs" />
     <Compile Include="OmssaPeptideSpectralMatchFile.cs" />
     <Compile Include="PeptideSpectralMatchFile.cs" />
     <Compile Include="PeptideSpectrumMatch.cs" />

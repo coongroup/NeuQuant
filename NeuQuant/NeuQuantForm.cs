@@ -947,6 +947,7 @@ namespace NeuQuant
                 processor.GetPeptides();
                 processor.FilterPeptides();
                 processor.ExtractFeatureSets();
+                processor.CalculateSystematicError();
                 processor.FindPeaks();
                 processor.QuantifyPeaks();
 

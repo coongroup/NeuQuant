@@ -6,25 +6,90 @@ namespace NeuQuant
 {
     public class NeuQuantPeptide
     {
+        /// <summary>
+        /// The spacing between two peptides that define a cluster
+        /// </summary>
         private const int DaSpacingToDefineCluster = 1;
 
+        /// <summary>
+        /// The Peptide Spectral Matches of this Peptide
+        /// </summary>
         public List<PeptideSpectrumMatch> PeptideSpectrumMatches;
+
+        /// <summary>
+        /// The best PSM of this Peptide
+        /// </summary>
         public PeptideSpectrumMatch BestPeptideSpectrumMatch;
-        public HashSet<int> IdentifiedChargeStates;
+        
+        /// <summary>
+        /// All the idenfied charge states of this peptide
+        /// </summary>
+        public HashSet<int> IdentifiedChargeStates { get; private set; }
+
+        /// <summary>
+        /// The amino acid polymer of this peptide
+        /// </summary>
         public Peptide Peptide { get; private set; }
+
+        /// <summary>
+        /// All of the quantifiable channels of this peptide, sorted on monoisotopic mass
+        /// </summary>
         public SortedList<double, Peptide> QuantifiableChannels;
+
+        /// <summary>
+        /// All the clusters of this peptide, sorted on monoisotopic mass, index by cluster
+        /// </summary>
         public SortedList<double, Peptide>[] Clusters;
+
+        /// <summary>
+        /// All the features of this peptide, broken down by charge state and raw file
+        /// </summary>
         public List<NeuQuantFeatureSet> FeatureSets;
 
+        /// <summary>
+        /// The smallest spacing between any two quantifiable channels of this peptide (in Da).
+        /// This defines the minimum resolution needed to resolve all the channels of this peptide.
+        /// </summary>
         public double SmallestTheorecticalMassSpacing { get; private set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public double BiggestThSpacing { get; private set; }
 
+        /// <summary>
+        /// The number of Peptide Spectrum Matches this Peptide has
+        /// </summary>
         public int NumberOfPeptideSpectrumMatches { get { return PeptideSpectrumMatches.Count; } }
+
+        /// <summary>
+        /// The Amino Acid Sequence of this Peptide
+        /// </summary>
         public string Sequence { get { return Peptide.Sequence; } }
+
+        /// <summary>
+        /// Indicates if this Peptide contains a quantitative channel
+        /// </summary>
         public bool ContainsQuantitativeChannel { get { return NumberOfChannels > 1; } }
-        public bool ContainsClusters { get { return NumberOfClusters > 1; } }
+
+        /// <summary>
+        /// Indicates if this Peptide contains more than one cluster
+        /// </summary>
+        public bool ContainsMultipleClusters { get { return NumberOfClusters > 1; } }
+
+        /// <summary>
+        /// Indicates if this Peptide contains isotopologues of small spacing
+        /// </summary>
         public bool ContainsIsotopologue { get { return SmallestTheorecticalMassSpacing < DaSpacingToDefineCluster; } }
+
+        /// <summary>
+        /// The number of quantitatifable channels
+        /// </summary>
         public int NumberOfChannels { get { return QuantifiableChannels.Count; } }
+
+        /// <summary>
+        /// The number of clusters
+        /// </summary>
         public int NumberOfClusters { get { return Clusters.Length; } }
         
         public NeuQuantPeptide()
@@ -40,20 +105,26 @@ namespace NeuQuant
             AddPeptideSpectrumMatch(psm);
         }
 
+        /// <summary>
+        /// Attempts to add a peptide spectrum match to this peptide.
+        /// </summary>
+        /// <param name="psm">The psm to add to this peptide</param>
+        /// <returns>True if the psm was added, false otherwise</returns>
         public bool AddPeptideSpectrumMatch(PeptideSpectrumMatch psm)
         {
             if (Peptide != null && !Peptide.Equals(psm.Peptide))
                 return false;
             
-            if (PeptideSpectrumMatches.Count == 0)
+            // Record the PSM and Charge
+            PeptideSpectrumMatches.Add(psm);
+            IdentifiedChargeStates.Add(psm.Charge);
+
+            // Is this the first psm? if so, set up the quantifiable channels
+            if (PeptideSpectrumMatches.Count == 1)
             {
                 Peptide = psm.Peptide;
                 SetQuantChannels(Peptide);
             }
-            
-            // Record the PSM and Charge
-            PeptideSpectrumMatches.Add(psm);
-            IdentifiedChargeStates.Add(psm.Charge);
 
             // Find the best PSM
             if (BestPeptideSpectrumMatch == null)
@@ -67,8 +138,19 @@ namespace NeuQuant
                 {
                     BiggestThSpacing = SmallestTheorecticalMassSpacing / Math.Abs(psm.Charge);
 
-                    //TODO add logic for increasing match score
-                    if (psm.MatchScore < BestPeptideSpectrumMatch.MatchScore)
+                    if (psm.MatchType != BestPeptideSpectrumMatch.MatchType)
+                    {
+                        throw new ArgumentException("Cannot compare peptide spectral matches of different score types!");
+                    }
+
+                    // What way to compare
+                    int direction = Math.Sign((int)BestPeptideSpectrumMatch.MatchType);
+
+                    // Make the comparsion
+                    int comp = psm.MatchScore.CompareTo(BestPeptideSpectrumMatch.MatchScore);
+
+                    // If the direction and comparison are the same sign, then the psm is a better match
+                    if (direction == comp)
                         BestPeptideSpectrumMatch = psm;
                 }
             }
@@ -124,6 +206,7 @@ namespace NeuQuant
                 previousMass = currentMass;
             }
 
+            // Convert the list of clusters into an array
             Clusters = clusters.ToArray();
             SmallestTheorecticalMassSpacing = minSpacing;
         }

@@ -149,7 +149,7 @@ namespace NeuQuant.IO
             yield return currentPeptide;
         } 
 
-        public IEnumerable<PeptideSpectrumMatch> GetPsms()
+        private IEnumerable<PeptideSpectrumMatch> GetPsms()
         {
             Dictionary<long, Modification> modifications = GetModifications();
 
@@ -178,7 +178,7 @@ namespace NeuQuant.IO
                 double isoMZ = 0;
                 double score = 0;
                 double rt = 0;
-                PeptideSpectrumMatchScoreType scoreType = PeptideSpectrumMatchScoreType.Unknown;;
+                PeptideSpectrumMatchScoreType scoreType = PeptideSpectrumMatchScoreType.Unknown;
                 while (reader.Read())
                 {
                     long currentPSMid = (long)reader["psmID"];

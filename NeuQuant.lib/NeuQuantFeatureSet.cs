@@ -134,7 +134,7 @@ namespace NeuQuant
                     }
                 }
 
-                double threshold = maxIntensity/(Math.E *Math.E);
+                double threshold = maxIntensity/(Math.E*Math.E);
                 double channelIntensity = 0;
                 int avg = 0;
                 for (int i = 0; i < ppmErrors.Count; i++)
@@ -251,7 +251,7 @@ namespace NeuQuant
                 // NeuCode (with or without clusters)
                 NeuCodeFindPeaks(peakTolerance, numberOfIsotopes, systematicThError, checkIsotopicDistribuition, isotopicPercentError);
             }
-            else if (Peptide.ContainsClusters)
+            else if (Peptide.ContainsMultipleClusters)
             {
                 // SILAC (only clusters, no isotopologues to worry about)
                 SilacFindPeaks(peakTolerance, numberOfIsotopes, systematicThError, checkIsotopicDistribuition, isotopicPercentError);
@@ -343,6 +343,22 @@ namespace NeuQuant
         public NeuQuantFeature GetFeature(double retentionTime)
         {
             return _features[GetFeatureIndex(retentionTime)];
+        }
+
+        public IEnumerable<double> PrecursorMassError(Peptide channel, double ppmRange = 25)
+        {
+            double mz = channel.ToMz(ChargeState, 0);
+            DoubleRange range = DoubleRange.FromPPM(mz, ppmRange);
+
+             // Loop over all the spectra in the feature
+            foreach (var miniSpectrum in Spectra)
+            {
+                IPeak peak = miniSpectrum.GetClosestPeak(range);
+                if (peak != null)
+                {
+                    yield return peak.X - mz;
+                }
+            }
         }
 
         public override string ToString()

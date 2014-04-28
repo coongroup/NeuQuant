@@ -31,18 +31,20 @@ namespace NeuQuant
         public double RetentionTime { get { return Spectrum.RetentionTime; } }
         public bool ContainsData { get { return _isotopes.Count > 0; } }
         public int ChannelsPresent { get { return _isotopes.Count; } }
+       
         public int ValidIsotopes { 
             get
             {
                 int count = 0;
                 for (int i = 0; i < NumberOfIsotopes; i++)
                 {
-                    if ((_usedIsotopes & (1 << i)) != 0)
+                    if (IsIsotopeValid(i))
                         count++;
                 }
                 return count;
             } 
         }
+
         public int TotalIsotopesDetected
         {
             get { return _isotopes.Values.Sum(peaks => peaks.Count(p => p != null)); }
@@ -104,7 +106,7 @@ namespace NeuQuant
             double totalIntensity = 0;
             for (int i = 0; i < NumberOfIsotopes; i++)
             {
-                if (peaks[i] == null )
+                if (peaks[i] == null)
                     continue;
 
                 if (ignoreChecks || IsIsotopeValid(i))

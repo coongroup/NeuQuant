@@ -40,7 +40,7 @@ namespace NeuQuant
         {
             // Get all the raw files in the data directory
             Dictionary<string, ThermoRawFile> rawFiles = Directory.EnumerateFiles(DataDirectory, "*.raw", SearchOption.TopDirectoryOnly).ToDictionary(file => Path.GetFileNameWithoutExtension(file), file => new ThermoRawFile(file));
-
+     
             _psms = new List<PeptideSpectrumMatch>();
             // Read all variable mods and store
             using (var reader = new CsvReader(new StreamReader(FilePath), true))
