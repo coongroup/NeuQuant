@@ -11,6 +11,8 @@
     <AssemblyName>NeuQuant</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -48,11 +50,13 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EntityFramework">
-      <HintPath>..\packages\EntityFramework.6.0.0\lib\net45\EntityFramework.dll</HintPath>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\EntityFramework.6.0.2\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
-    <Reference Include="EntityFramework.SqlServer">
-      <HintPath>..\packages\EntityFramework.6.0.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\EntityFramework.6.0.2\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
     <Reference Include="LumenWorks.Framework.IO">
       <HintPath>..\packages\LumenWorks.Framework.IO.3.8.0\lib\net20\LumenWorks.Framework.IO.dll</HintPath>
@@ -60,13 +64,16 @@
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Data.SQLite">
+    <Reference Include="System.Data.SQLite, Version=1.0.92.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\System.Data.SQLite.Core.1.0.92.0\lib\net45\System.Data.SQLite.dll</HintPath>
     </Reference>
-    <Reference Include="System.Data.SQLite.EF6">
+    <Reference Include="System.Data.SQLite.EF6, Version=1.0.92.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\System.Data.SQLite.EF6.1.0.92.0\lib\net45\System.Data.SQLite.EF6.dll</HintPath>
     </Reference>
-    <Reference Include="System.Data.SQLite.Linq">
+    <Reference Include="System.Data.SQLite.Linq, Version=1.0.92.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\System.Data.SQLite.Linq.1.0.92.0\lib\net45\System.Data.SQLite.Linq.dll</HintPath>
     </Reference>
     <Reference Include="System.Drawing" />
@@ -112,21 +119,21 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\CSMSL\CSMSL\CSMSL.csproj">
+    <ProjectReference Include="..\..\CSMSL\CSMSL\CSMSL.csproj">
       <Project>{3c8c9f05-9c19-4251-95fa-05d7edc8cae6}</Project>
       <Name>CSMSL</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\CSMSL\CSMSL\IO\OMSSA\OMSSA.csproj">
+    <ProjectReference Include="..\..\CSMSL\CSMSL\IO\OMSSA\OMSSA.csproj">
       <Project>{45a71e18-42e8-41a4-9479-2852c4186993}</Project>
       <Name>OMSSA</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\CSMSL\CSMSL\IO\Thermo\Thermo.csproj">
+    <ProjectReference Include="..\..\CSMSL\CSMSL\IO\Thermo\Thermo.csproj">
       <Project>{24dc85ff-e97b-4140-9614-77dd8fddd32f}</Project>
       <Name>Thermo</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
