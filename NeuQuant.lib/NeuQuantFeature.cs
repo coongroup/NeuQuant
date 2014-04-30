@@ -272,7 +272,7 @@ namespace NeuQuant
         /// <param name="isotope">The isotope of consideration</param>
         /// <param name="maxPPM">The maximum ppm allowance for assigning a peak</param>
         /// <returns>The number of channels that were mapped to peaks</returns>
-        public int AssignPeaks(NeuQuantSpectrum spectrum, IList<Peptide> channels, double[] expectedSpacings, int isotope, Tolerance maxTolerance)
+        public int AssignPeaks(NeuQuantSpectrum spectrum, IList<Peptide> channels, double[] expectedSpacings, int isotope, Tolerance maxTolerance, Tolerance correctSpacingTolerance)
         {
             // Cannot assign what does not exist
             if (spectrum == null || spectrum.Count == 0)
@@ -282,11 +282,11 @@ namespace NeuQuant
             if (spectrum.Count == 1)
             {
                 // Try to assign the only peak by ppm
-                return AssignPeakByPPM(spectrum.GetPeak(0), channels, isotope, maxTolerance) ? 1 : 0;
+                return AssignPeakByPPM(spectrum.GetPeak(0), channels, isotope, maxTolerance, correctSpacingTolerance) ? 1 : 0;
             }
             
             // Check peaks on spacing
-            int channelsAssigned = CheckPeakSpacing(spectrum, channels, expectedSpacings, isotope, maxTolerance);
+            int channelsAssigned = CheckPeakSpacing(spectrum, channels, expectedSpacings, isotope, maxTolerance, correctSpacingTolerance);
 
             // Mark that the spacing for this isotope is correct if all the channels were assigned
             if (channelsAssigned == channels.Count)
@@ -297,7 +297,7 @@ namespace NeuQuant
             return channelsAssigned;
         }
 
-        private bool AssignPeakByPPM(IPeak peak, IEnumerable<Peptide> channels, int isotope, Tolerance maxTolerance)
+        private bool AssignPeakByPPM(IPeak peak, IEnumerable<Peptide> channels, int isotope, Tolerance maxTolerance, Tolerance correctSpacingTolerance)
         {
             // The m/z of the peak
             double mz = peak.X;
@@ -327,11 +327,14 @@ namespace NeuQuant
             if (!maxTolerance.Within(mz + bestTh, mz))
                 return false;
 
+            if (correctSpacingTolerance.Within(mz + bestTh, mz))
+                _spacingIsotopes |= (1 << isotope);
+
             // Try to assign the channel (bestPeptide) to this peak
             return AddChannel(bestPeptide, peak, isotope);
         }
 
-        private int CheckPeakSpacing(NeuQuantSpectrum spectrum, IList<Peptide> channels, double[] expectedSpacings, int isotope, Tolerance maxTolerance, double lowerPercent = 0.25, double higherPercent = 0.15)
+        private int CheckPeakSpacing(NeuQuantSpectrum spectrum, IList<Peptide> channels, double[] expectedSpacings, int isotope, Tolerance maxTolerance, Tolerance correctSpacingTolerance, double lowerPercent = 0.25, double higherPercent = 0.15)
         {
             // Adjust spacing percents, this enables asymmetrical bounds, if wanted
             lowerPercent = 1 - lowerPercent;
@@ -385,7 +388,7 @@ namespace NeuQuant
             // No peaks passed the spacing, try to save the most intense
             if (count == 0)
             {
-                return AssignPeakByPPM(spectrum.GetBasePeak(), channels, isotope, maxTolerance) ? 1 : 0;
+                return AssignPeakByPPM(spectrum.GetBasePeak(), channels, isotope, maxTolerance, correctSpacingTolerance) ? 1 : 0;
             }
 
             // Counter for the number of channels that were assigned a peak

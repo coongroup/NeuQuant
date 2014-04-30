@@ -180,6 +180,7 @@ namespace NeuQuant.IO
                         PRIMARY KEY (sampleID, modificationID) ON CONFLICT IGNORE)";
                 new SQLiteCommand(sql, conn).ExecuteNonQuery();
                 
+                // Analyses
                 sql = @"CREATE TABLE IF NOT EXISTS analyses (
                         id INTEGER PRIMARY KEY ASC,
                         createDate TEXT,
@@ -187,11 +188,23 @@ namespace NeuQuant.IO
                         UNIQUE (createDate, name) ON CONFLICT IGNORE)";
                 new SQLiteCommand(sql, conn).ExecuteNonQuery();
 
+                // Analysis Parameters
                 sql = @"CREATE TABLE IF NOT EXISTS analysisParameters (
                         id INTEGER PRIMARY KEY ASC,
                         analysisID INT,
                         key TEXT,
-                        value TEXT)";
+                        value BLOB,
+                        valueType TEXT)";
+                new SQLiteCommand(sql, conn).ExecuteNonQuery();
+
+                // Analysis Parameters
+                sql = @"CREATE TABLE IF NOT EXISTS quantitation (
+                        id INTEGER PRIMARY KEY ASC,
+                        analysisID INT,
+                        peptideID INT,
+                        sampleID INT,
+                        quantitation REAL,
+                        UNIQUE (analysisID, sampleID, peptideID) ON CONFLICT IGNORE)";
                 new SQLiteCommand(sql, conn).ExecuteNonQuery();
 
 //                // XICs

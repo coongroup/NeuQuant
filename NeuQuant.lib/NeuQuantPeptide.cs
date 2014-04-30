@@ -1,4 +1,5 @@
-﻿using CSMSL.Proteomics;
+﻿using CSMSL.Analysis.ExperimentalDesign;
+using CSMSL.Proteomics;
 using System;
 using System.Collections.Generic;
 
@@ -104,7 +105,7 @@ namespace NeuQuant
         {
             AddPeptideSpectrumMatch(psm);
         }
-
+        
         /// <summary>
         /// Attempts to add a peptide spectrum match to this peptide.
         /// </summary>
@@ -224,6 +225,44 @@ namespace NeuQuant
         public override string ToString()
         {
             return Peptide.ToString();
+        }
+
+        public NeuQuantQuantitation Quantify(IList<NeuQuantSample> _samples, bool noiseBandCap, double noiseLevel)
+        {
+            NeuQuantQuantitation quant = new NeuQuantQuantitation(this, _samples.Count);
+
+            foreach (var featureSet in FeatureSets)
+            {
+                Dictionary<Peptide, double> featureSetQuant = featureSet.Quantify(noiseBandCap, noiseLevel);
+                foreach (KeyValuePair<Peptide, double> channelQuant in featureSetQuant)
+                {
+                    var channel = channelQuant.Key;
+                    double quantitationValue = channelQuant.Value;
+                    NeuQuantSample sample = GetSample(channel, _samples);
+                    quant.AddQuantitation(sample, quantitationValue);
+                }
+            }
+
+            return quant;
+        }
+
+        private NeuQuantSample GetSample(Peptide peptide, IEnumerable<NeuQuantSample> possibleSamples)
+        {
+            foreach (NeuQuantSample sample in possibleSamples)
+            {
+                bool allThere = true;
+                foreach (var mod in sample.Modifications)
+                {
+                    if (!peptide.Contains(mod))
+                    {
+                        allThere = false;
+                        break;
+                    }
+                }
+                if (allThere)
+                    return sample;
+            }
+            return null;
         }
     }
 }

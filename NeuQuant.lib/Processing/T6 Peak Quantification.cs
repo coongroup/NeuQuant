@@ -1,57 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using CSMSL.Proteomics;
+﻿using System.Collections.Generic;
 
 namespace NeuQuant.Processing
 {
     public partial class Processor
     {
-        public void QuantifyPeaks(bool noiseBandCap = true, double noiseLevel = 3)
+        public void QuantifyPeptides()
         {
-            OnMessage("Quantifying Peaks...");
+            QuantifyPeptides(QuantifiablePeptides, NoiseBandCap, MinimumSN);
+        }
+
+        public void QuantifyPeptides(IEnumerable<NeuQuantPeptide> peptides, bool noiseBandCap, double noiseLevel)
+        {
+            OnMessage("Quantifying Peptides...");
             OnProgress(0);
+
             int count = 0;
-            string baseDir = Path.GetDirectoryName(NqFile.FilePath);
 
-            using (StreamWriter peptideWriter = new StreamWriter(Path.Combine(baseDir, "peptides.csv")))
-            using (StreamWriter featureWriter = new StreamWriter(Path.Combine(baseDir, "features.csv")))
+            NqFile.BeginTransaction();
+
+            foreach (var peptide in peptides)
             {
-                featureWriter.WriteLine("Peptide,Sequence,Z,#PSMS,Channel 1,Channel 2,Log2");
-                foreach (NeuQuantFeatureSet featureSet in FeatureSets)
+                var quant = peptide.Quantify(_samples, noiseBandCap, noiseLevel);
+
+                NqFile.InsertQuantitation(this, quant);
+                count++;
+                if (count % 100 == 0)
                 {
-                    var quant = featureSet.Quantify(noiseBandCap, noiseLevel);
-                    double one = quant[featureSet.Peptide.QuantifiableChannels.Values[0]];
-                    double two = quant[featureSet.Peptide.QuantifiableChannels.Values[1]];
-                    featureWriter.WriteLine("{0},{1},{2},{3},{4},{5},{6}", featureSet.Peptide.Peptide,featureSet.Peptide.Peptide.Sequence, featureSet.ChargeState,featureSet.PSMs.Count, one, two, Math.Log(two/one, 2));
-
-                    count++;
-                    if (count%100 == 0)
-                    {
-                        OnProgress((double) count/FeatureSets.Count);
-                    }
-                }
-
-                peptideWriter.WriteLine("Peptide,Sequence,#Features,Channel 1,Channel 2,Log2");
-                foreach (var peptide in QuantifiablePeptides)
-                {
-                    double sumone = 0;
-                    double sumtwo = 0;
-                    foreach (var featureSet in peptide.FeatureSets)
-                    {
-                        var quant = featureSet.Quantify(noiseBandCap, noiseLevel);
-                        sumone += quant[featureSet.Peptide.QuantifiableChannels.Values[0]];
-                        sumtwo += quant[featureSet.Peptide.QuantifiableChannels.Values[1]];
-                    }
-                    peptideWriter.WriteLine("{0},{1},{2},{3},{4},{5}", peptide.Peptide,peptide.Peptide.Sequence, peptide.FeatureSets.Count, sumone, sumtwo, Math.Log(sumtwo / sumone, 2));
-
+                    OnProgress((double)count / FeatureSets.Count);
                 }
             }
+
+            NqFile.EndTranscation();
            
             OnProgress(0);
         }
-
-        
 
     }
 }

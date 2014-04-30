@@ -13,7 +13,7 @@ namespace NeuQuant.Processing
             Median
         }
 
-        public double SystematicPPMError { get; private set; }
+        public double SystematicPPMError;
 
         public double CalculateSystematicError()
         {

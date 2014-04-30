@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using CSMSL;
 using CSMSL.Chemistry;
 using NeuQuant.IO;
@@ -18,20 +20,33 @@ namespace NeuQuant.Processing
         public double MinimumSN { get; set; }
         public double MaximumSN { get; set; }
         public double MinimumResolution { get; set; }
-        public double MaximumRtRangePerFeature  { get; set; }
+        public double MaximumRtRangePerFeature { get; set; }
 
         public double IsotopicDistributionPercentError { get; set; }
 
-        protected bool UseIsotopicDistribution = true;
+        public bool NoiseBandCap { get; set; }
+        public bool UseIsotopicDistribution { get; set; }
 
         protected Func<double, int, double> TheoreticalSpacing;
         protected Predicate<NeuQuantPeptide> Resolvable;
-        
-        public bool IsOpen { get; private set; }
+
+        private List<NeuQuantSample> _samples;
+
+        public string Name { get; internal set; }
+        public long ID { get; internal set; }
+
+        private bool IsOpen { get; set; }
 
         public string BaseDirectory { get { return Path.GetDirectoryName(NqFile.FilePath); } }
 
-        public Processor(NeuQuantFile nqFile, int isotopesToQuantify = 3, double minRtDelta = 0.25, double maxRtDelta = 0.25, double resolution = 240000, double resolutionAt = 400, double quantAtPeakHeight = 10, bool checkIsotopicDistribution = true)
+        public Processor(NeuQuantFile nqFile)
+        {
+            NqFile = nqFile;
+        }
+
+        public Processor(NeuQuantFile nqFile, string name = "Analysis", int isotopesToQuantify = 3, double minRtDelta = 0.25, double maxRtDelta = 0.25, 
+            double resolution = 240000, double resolutionAt = 400, double quantAtPeakHeight = 10, bool checkIsotopicDistribution = true,
+            bool noiseBandCap = true)
         {
             NqFile = nqFile;
             NumberOfIsotopesToQuantify = isotopesToQuantify;
@@ -40,8 +55,10 @@ namespace NeuQuant.Processing
             MS2Tolerance = new Tolerance(ToleranceType.PPM, 10);
             MinimumResolution = resolution/2 + 1;
 
+            NoiseBandCap = noiseBandCap;
             UseIsotopicDistribution = checkIsotopicDistribution;
-            
+
+            Name = name;
             MinimumSN = 3;
             MaximumSN = double.MaxValue;
             IsotopicDistributionPercentError = 0.25;
@@ -75,11 +92,13 @@ namespace NeuQuant.Processing
             
             IsOpen = NqFile.Open();
 
-           
-            //TODO Save Analysis Parameters in NeuQuant File
+            // Save this analysis
+            ID = SaveAnalysisParameters(Name);
+
+            _samples = NqFile.GetSamples().ToList();
         }
 
-        public void SaveAnalysisParameters(string analysisName = "")
+        public long SaveAnalysisParameters(string analysisName = "")
         {
             NqFile.BeginTransaction();
 
@@ -88,10 +107,17 @@ namespace NeuQuant.Processing
             // handy: http://stackoverflow.com/questions/737151/how-to-get-the-list-of-properties-of-a-class
             foreach(var prop in GetType().GetProperties())
             {
-                NqFile.SaveAnalysisParameter(analysisID, prop.Name, prop.GetValue(this, null).ToString());
+                NqFile.SaveAnalysisParameter(analysisID, prop.Name, prop.GetValue(this, null));
             }
 
             NqFile.EndTranscation();
+
+            return analysisID;
+        }
+
+        public void SetValue(string propertyName, object value)
+        {
+
         }
 
         #region Close/Dispose

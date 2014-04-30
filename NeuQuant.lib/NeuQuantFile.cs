@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Data.SQLite;
+using CSMSL.IO;
 using CSMSL.IO.Thermo;
 using CSMSL.Spectral;
 using CSMSL.Proteomics;
@@ -17,7 +19,7 @@ namespace NeuQuant.IO
     public partial class NeuQuantFile : IDisposable
     {
         public string FilePath { get; private set; }
-       
+
         private SQLiteConnection _dbConnection;
         private SQLiteTransaction _currentTranscation;
 
@@ -32,13 +34,28 @@ namespace NeuQuant.IO
         private SQLiteCommand _insertPSM;
         private SQLiteCommand _insertMod;
 
+        private SQLiteCommand _insertSample;
         private SQLiteCommand _insertAnalysis;
         private SQLiteCommand _insertAnalysisParameter;
 
+        private SQLiteCommand _insertQuantitation;
+
         private SQLiteCommand _selectPeptide;
-        
-        private long _currentSpectrumID = 0;
-        
+
+        private Dictionary<long, Modification> _modifications;
+
+        private Dictionary<long, Modification> Modifications
+        {
+            get
+            {
+                if (_modifications == null)
+                {
+                    _modifications = GetModifications();
+                }
+                return _modifications;
+            }
+        }
+
         public NeuQuantFile(string filePath)
         {
             FilePath = filePath;
@@ -52,10 +69,12 @@ namespace NeuQuant.IO
             _selectIndividualSpectrum = new SQLiteCommand(@"SELECT * FROM spectra WHERE scannumber = @scannumber AND fileID = (SELECT id FROM files WHERE filePath = @filePath)", _dbConnection);
             _selectPrecursorSpectrum = new SQLiteCommand(@"SELECT * FROM spectra WHERE msnOrder = 1 AND retentionTime BETWEEN @minRT AND @maxRT AND fileID = (SELECT id FROM files WHERE filePath = @filePath) AND resolution >= @minResolution ORDER BY ABS(retentionTIme - @rt) LIMIT 1", _dbConnection);
             _selectPeptide = new SQLiteCommand(@"SELECT id FROM peptides WHERE sequence = @sequence AND monoMass = @monoMass", _dbConnection);
-            _selectModification = new SQLiteCommand(@"SELECT id FROM modifications WHERE name = @name" , _dbConnection);
+            _selectModification = new SQLiteCommand(@"SELECT id FROM modifications WHERE name = @name", _dbConnection);
             _insertAnalysis = new SQLiteCommand(@"INSERT INTO analyses (createDate, name) VALUES (DateTime('now'), @name)", _dbConnection);
-            _insertAnalysisParameter = new SQLiteCommand(@"INSERT INTO analysisParameters (analysisID, key, value) VALUES (@analysisID, @key, @value)", _dbConnection);
-        }        
+            _insertAnalysisParameter = new SQLiteCommand(@"INSERT INTO analysisParameters (analysisID, key, value, valueType) VALUES (@analysisID, @key, @value, @valueType)", _dbConnection);
+            
+            _insertQuantitation = new SQLiteCommand(@"INSERT INTO quantitation (analysisID, peptideID, sampleID, quantitation) VALUES (@analysisID, @peptideID, @sampleID, @quantitation)", _dbConnection);
+        }
 
         public bool Open()
         {
@@ -63,7 +82,7 @@ namespace NeuQuant.IO
                 return true;
             try
             {
-                _dbConnection.Open();             
+                _dbConnection.Open();
             }
             catch (SQLiteException e)
             {
@@ -71,22 +90,43 @@ namespace NeuQuant.IO
             }
             return true;
         }
-          
+
         public long SelectFile(string filePath)
         {
             _selectFile.Parameters.AddWithValue("@filePath", filePath);
-            return (long)_selectFile.ExecuteScalar();
+            return (long) _selectFile.ExecuteScalar();
         }
 
         public long InsertFile(string filePath, string description = "")
         {
-            _insertFile.Parameters.AddWithValue("@filePath", filePath);         
+            _insertFile.Parameters.AddWithValue("@filePath", filePath);
             _insertFile.Parameters.AddWithValue("@description", description);
             _insertFile.ExecuteScalar();
 
             return SelectFile(filePath);
         }
-              
+
+        public IEnumerable<NeuQuantSample> GetSamples()
+        {
+            var selectSamples = new SQLiteCommand(@"SELECT * FROM samples s
+                                                    JOIN samples_to_mods stm
+                                                    ON stm.sampleID = s.id", _dbConnection);
+            using (var reader = selectSamples.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    string name = (string) reader["name"];
+                    string description = (string) reader["description"];
+                    long id = (long) reader["id"];
+                    long modID = (int) reader["modificationID"];
+
+                    var sample = new NeuQuantSample(name, description) { ID = id };
+                    sample.AddModification(Modifications[modID]);
+                    yield return sample;
+                }
+            }
+        }
+
         private Dictionary<long, Modification> GetModifications()
         {
             // Read non isotopologues
@@ -100,11 +140,11 @@ namespace NeuQuant.IO
             {
                 while (reader.Read())
                 {
-                    long id = (long)reader["id"];
+                    long id = (long) reader["id"];
                     string name = reader["name"].ToString();
-                    ModificationSites sites = (ModificationSites)reader["sites"];
-                    double mass = (double)reader["deltaMass"];
-                    bool isVariable = (bool)reader["isVariable"];
+                    ModificationSites sites = (ModificationSites) reader["sites"];
+                    double mass = (double) reader["deltaMass"];
+                    bool isVariable = (bool) reader["isVariable"];
 
                     Modification mod = new Modification(mass, name, sites);
                     mods.Add(id, mod);
@@ -123,16 +163,16 @@ namespace NeuQuant.IO
                 Isotopologue isotopologue = null;
                 while (reader.Read())
                 {
-                    long currentID = (long)reader["id"];
+                    long currentID = (long) reader["id"];
                     if (currentID != lastID)
                     {
                         lastID = currentID;
                         string name = reader["name"].ToString();
-                        ModificationSites sites = (ModificationSites)reader["sites"];
+                        ModificationSites sites = (ModificationSites) reader["sites"];
                         isotopologue = new Isotopologue(name, sites);
                         mods.Add(currentID, isotopologue);
                     }
-                    long modId = (int)reader["modificationID"];
+                    long modId = (int) reader["modificationID"];
                     isotopologue.AddModification(mods[modId]);
                 }
             }
@@ -140,10 +180,48 @@ namespace NeuQuant.IO
             return mods;
         }
 
+        public IEnumerable<Tuple<string, Dictionary<NeuQuantSample, double>>> GetQuantitation(long analysisID)
+        {
+            var samples = GetSamples().ToDictionary(s => s.Name);
+
+            var selectQuantitation = new SQLiteCommand(@"SELECT s.name AS sampleName, sequence, quantitation
+                                                            FROM quantitation q
+                                                            JOIN samples s
+                                                            ON q.sampleID = s.id
+                                                            JOIN peptides p
+                                                            ON q.peptideID = p.id
+                                                            WHERE analysisID = '"+analysisID+"' ORDER BY peptideID", _dbConnection);
+
+            using (var reader = selectQuantitation.ExecuteReader())
+            {
+                string lastSequence = "";
+                var quant = new Dictionary<NeuQuantSample, double>();
+                while (reader.Read())
+                {
+                    string sequence = (string) reader["sequence"];
+                    if(!sequence.Equals(lastSequence))
+                    {
+                        if(lastSequence != "")
+                            yield return new Tuple<string, Dictionary<NeuQuantSample, double>> (lastSequence, quant);
+                        quant = new Dictionary<NeuQuantSample, double>();
+                        lastSequence = sequence;
+                    }
+                    
+                    string sampleName = (string)reader["sampleName"];
+                    var sample = samples[sampleName];
+                    double quantitation = (double) reader["quantitation"];
+                    quant[sample] =quantitation;
+                }
+                if(lastSequence != "")
+                    yield return new Tuple<string, Dictionary<NeuQuantSample, double>> (lastSequence, quant);
+            }
+        
+        }
+
         public IEnumerable<NeuQuantPeptide> GetPeptides()
         {
             NeuQuantPeptide currentPeptide = new NeuQuantPeptide();
-            foreach (PeptideSpectrumMatch psm in GetPsms().OrderBy(psm => psm.LeucineSequence).ThenBy(psm => psm.MonoisotopicMass))
+            foreach (PeptideSpectrumMatch psm in GetPsms().OrderBy(psm => psm.PeptideID))
             {
                 if (currentPeptide.AddPeptideSpectrumMatch(psm))
                     continue;
@@ -152,13 +230,11 @@ namespace NeuQuant.IO
                 currentPeptide = new NeuQuantPeptide(psm);
             }
             yield return currentPeptide;
-        } 
+        }
 
         private IEnumerable<PeptideSpectrumMatch> GetPsms()
         {
-            Dictionary<long, Modification> modifications = GetModifications();
-
-            var selectPSMs = new SQLiteCommand(@"SELECT psms.id AS psmID, m.id AS modID, sequence, charge, isoMZ, matchScore, position, scannumber, filePath, psms.retentionTime, scoreType
+            var selectPSMs = new SQLiteCommand(@"SELECT psms.id AS psmID, m.id AS modID, sequence, charge, isoMZ, matchScore, position, scannumber, filePath, psms.retentionTime, scoreType, pep.id AS pepID
                                                 FROM psms 
                                                 INNER JOIN peptides pep
                                                 ON psms.peptideID = pep.id
@@ -183,50 +259,52 @@ namespace NeuQuant.IO
                 double isoMZ = 0;
                 double score = 0;
                 double rt = 0;
+                long peptideID = -1;
                 PeptideSpectrumMatchScoreType scoreType = PeptideSpectrumMatchScoreType.Unknown;
                 while (reader.Read())
                 {
-                    long currentPSMid = (long)reader["psmID"];
+                    long currentPSMid = (long) reader["psmID"];
 
                     if (lastPSMid != currentPSMid)
                     {
                         if (peptide != null)
                         {
-                            yield return new PeptideSpectrumMatch(rawFile, spectrumNumber, rt, peptide, charge, isoMZ, score, scoreType);
+                            yield return new PeptideSpectrumMatch(rawFile, spectrumNumber, rt, peptide, charge, isoMZ, score, scoreType) { PeptideID = peptideID };
                         }
                         lastPSMid = currentPSMid;
                         string sequence = reader["sequence"].ToString();
+                        peptideID = (long) reader["pepID"];
                         peptide = new Peptide(sequence);
-                        charge = (int)reader["charge"];
-                        isoMZ = (double)reader["isoMZ"];
-                        score = (double)reader["matchScore"];
-                        spectrumNumber = (int)reader["scannumber"];
-                        rt = (double)reader["retentionTime"];
+                        charge = (int) reader["charge"];
+                        isoMZ = (double) reader["isoMZ"];
+                        score = (double) reader["matchScore"];
+                        spectrumNumber = (int) reader["scannumber"];
+                        rt = (double) reader["retentionTime"];
                         scoreType = (PeptideSpectrumMatchScoreType) reader["scoreType"];
                         string rawFilePath = reader["filePath"].ToString();
                         if (!rawFiles.TryGetValue(rawFilePath, out rawFile))
                         {
                             rawFile = new ThermoRawFile(rawFilePath);
                             rawFiles.Add(rawFilePath, rawFile);
-                        }                       
+                        }
                     }
-                    
+
                     // Some peptides might not have mods, so check here
                     object modIdObj = reader["modID"];
                     if (modIdObj != DBNull.Value)
                     {
-                        long modId = (long)modIdObj;
-                        Modification mod = modifications[modId];
-                        int position = (int)reader["position"];
+                        long modId = (long) modIdObj;
+                        Modification mod = Modifications[modId];
+                        int position = (int) reader["position"];
                         peptide.SetModification(mod, position);
                     }
                 }
                 // Return the last psm
                 if (peptide != null)
                 {
-                    yield return new PeptideSpectrumMatch(rawFile, spectrumNumber, rt, peptide, charge, isoMZ, score, scoreType);
+                    yield return new PeptideSpectrumMatch(rawFile, spectrumNumber, rt, peptide, charge, isoMZ, score, scoreType) { PeptideID = peptideID };
                 }
-            }       
+            }
         }
 
         public IEnumerable<NeuQuantAnalysis> GetAnalyses()
@@ -236,11 +314,11 @@ namespace NeuQuant.IO
             Dictionary<string, ThermoRawFile> rawFiles = new Dictionary<string, ThermoRawFile>();
             using (var reader = selectAnalyses.ExecuteReader())
             {
-                string lastID = "";
+                string lastID = "fasdfasd";
                 NeuQuantAnalysis analysis = null;
                 while (reader.Read())
                 {
-                    string name = (string)reader["name"];
+                    string name = (string) reader["name"];
                     if (name != lastID)
                     {
                         if (analysis != null)
@@ -250,14 +328,29 @@ namespace NeuQuant.IO
                         lastID = name;
                     }
 
-                    long id = (long)reader["id"];
-                    string date = (string)reader["createDate"];
+                    long id = (long) reader["id"];
+                    string date = (string) reader["createDate"];
                     analysis.AddAnalysis(date, id);
                 }
                 if (analysis != null)
                     yield return analysis;
             }
-        } 
+        }
+
+        public void InsertQuantitation(Processor processor, NeuQuantQuantitation quantitation)
+        {
+            foreach (var blah in quantitation.Quantitation)
+            {
+                NeuQuantSample sample = blah.Key;
+                double quant = blah.Value;
+
+                _insertQuantitation.Parameters.AddWithValue("@analysisID", processor.ID);
+                _insertQuantitation.Parameters.AddWithValue("@sampleID", sample.ID);
+                _insertQuantitation.Parameters.AddWithValue("@peptideID", quantitation.Peptide.BestPeptideSpectrumMatch.PeptideID);
+                _insertQuantitation.Parameters.AddWithValue("@quantitation", quant);
+                _insertQuantitation.ExecuteNonQuery();
+            }
+        }
 
         private long InsertSpectrum(NeuQuantSpectrum spectrum, long fileID, bool compress = true)
         {
@@ -268,12 +361,12 @@ namespace NeuQuant.IO
             _insertSpectrum.Parameters.AddWithValue("@retentionTime", spectrum.RetentionTime.ToString("F3"));
             _insertSpectrum.Parameters.AddWithValue("@msnOrder", spectrum.MsnOrder);
             _insertSpectrum.Parameters.AddWithValue("@resolution", spectrum.Resolution);
-            _insertSpectrum.Parameters.AddWithValue("@injectionTime", spectrum.InjectionTime.ToString("F3"));          
-            _insertSpectrum.Parameters.AddWithValue("@spectrum", spectrum.ToBytes(compress));          
+            _insertSpectrum.Parameters.AddWithValue("@injectionTime", spectrum.InjectionTime.ToString("F3"));
+            _insertSpectrum.Parameters.AddWithValue("@spectrum", spectrum.ToBytes(compress));
             _insertSpectrum.ExecuteNonQuery();
-           
+
             return _dbConnection.LastInsertRowId;
-        }        
+        }
 
         private void LoadPSMFile(PeptideSpectralMatchFile psmFile)
         {
@@ -285,27 +378,54 @@ namespace NeuQuant.IO
                 {
                     InsertPSM(psm);
                     count++;
-                    if (count % 100 == 0)
+                    if (count%100 == 0)
                     {
-                        OnProgressUpdate(this, (double)count / psmFile.PSMCount);
+                        OnProgressUpdate(this, (double) count/psmFile.PSMCount);
                     }
-                }               
+                }
                 transcation.Commit();
-            }         
+            }
         }
-               
+
+        private void LoadSamples(PeptideSpectralMatchFile psmFile)
+        {
+            using (var trans = _dbConnection.BeginTransaction())
+            {
+                foreach (var sample in psmFile.Samples.Values)
+                {
+                    LoadSample(sample);
+                }
+                trans.Commit();
+            }
+        }
+
+        private void LoadSample(NeuQuantSample sample)
+        {
+            new SQLiteCommand(@"INSERT INTO samples (name, description) VALUES ('" + sample.Name + "','" + sample.Description + "')", _dbConnection).ExecuteNonQuery();
+            long sampleID = _dbConnection.LastInsertRowId;
+
+            foreach (var modification in sample.Modifications)
+            {
+                new SQLiteCommand(@"INSERT INTO samples_to_mods (sampleID, modificationID) VALUES ('" + sampleID + "', (SELECT id FROM modifications WHERE name = '" + modification.Name + "' AND sites = '" + (int)modification.Sites + "' ) )", _dbConnection).ExecuteNonQuery();
+            }
+        }
+
         public void LoadData(PeptideSpectralMatchFile psmFile, bool compressSpectra = false)
         {
             if (psmFile == null)
                 return;
-          
+
+            OnMessageUpdate(this, "Loading Data From " + psmFile.FilePath + "...");
             using (psmFile)
             {
+                OnMessageUpdate(this, "Opening File " + psmFile.FilePath + "...");
                 psmFile.Open();
                 
                 InsertFile(psmFile.FilePath, psmFile.Type);
                
                 LoadModifications(psmFile);
+
+                LoadSamples(psmFile);
 
                 foreach (var rawFileTuple in psmFile.UsedRawFiles)
                 {
@@ -439,11 +559,12 @@ namespace NeuQuant.IO
             }
         }
 
-        public void SaveAnalysisParameter(long id, string key, string value)
+        public void SaveAnalysisParameter(long id, string key, object value)
         {
             _insertAnalysisParameter.Parameters.AddWithValue("@analysisID", id);
             _insertAnalysisParameter.Parameters.AddWithValue("@key", key);
             _insertAnalysisParameter.Parameters.AddWithValue("@value", value);
+            _insertAnalysisParameter.Parameters.AddWithValue("@valueType", value.GetType());
             _insertAnalysisParameter.ExecuteNonQuery();
         }
 
@@ -575,14 +696,65 @@ namespace NeuQuant.IO
 
         }
 
+        public Processor GetProcessor(string name)
+        {
+            return _getProcessor("WHERE a.name = " + name);
+        }
+
+        public Processor GetProcessor(long id)
+        {
+            return _getProcessor("WHERE a.id = " + id);
+        }
+
+        private Processor _getProcessor(string whereSql)
+        {
+            Processor processor = new Processor(this);
+
+            const string baseSql = @"SELECT name, createDate, a.id as ID, key, value, valueType
+                                    FROM analyses a
+                                    JOIN analysisParameters ap
+                                    ON ap.analysisID = a.id";
+
+            var selectProcessor = new SQLiteCommand(string.Join(" ", baseSql, whereSql), _dbConnection);
+
+            using (var reader = selectProcessor.ExecuteReader())
+            {
+                bool first = true;
+                while (reader.Read())
+                {
+                    if (first)
+                    {
+                        string name = (string)reader["name"];
+                        long id = (long)reader["ID"];
+                        processor.Name = name;
+                        processor.ID = id;
+                        first = false;
+                    }
+
+                    string key = (string) reader["key"];
+                    object value = reader["value"];
+                    string valueType = (string) reader["valueType"];
+
+                    //var item = Convert.ChangeType(value, Type.GetType(valueType));
+
+                    //processor.GetType().GetProperty(key).SetValue(processor, item, null);
+
+                }
+            }
+
+            //processor = new Processor(this, "Analysis 2", 3, 0.75, 0.75, 480000, checkIsotopicDistribution: true, noiseBandCap: false);
+            return processor;
+        }
+
         public bool TryGetLastProcessor(out Processor processor)
         {
-            processor = null;
-
-            // TODO write code for generating processors
-            processor = new Processor(this, 3, 0.75, 0.75, 480000, checkIsotopicDistribution: true);
-
-            return processor != null;
+            processor = _getProcessor("WHERE a.id = (SELECT id FROM analyses a ORDER BY createDate DESC LIMIT 1)");
+          
+            return !string.IsNullOrEmpty(processor.Name);
         }
+
+
+
+      
     }
 }

@@ -88,6 +88,7 @@ namespace NeuQuant
             Dictionary<Peptide, double> quant = new Dictionary<Peptide, double>();
             foreach (var channel in Peptide.QuantifiableChannels.Values)
             {
+             
                 IRange<int> range;
                 if (!_featureBounds.TryGetValue(channel, out range))
                 {
@@ -342,7 +343,7 @@ namespace NeuQuant
                         var tinySpectrum = miniSpectrum.Extract(mzRange, systematicThError);
 
                         // Try to assign the peaks to the correct channels
-                        feature.AssignPeaks(tinySpectrum, peptidesInCluster.Values, expectedSpacings, isotope, peakTolerance);
+                        feature.AssignPeaks(tinySpectrum, peptidesInCluster.Values, expectedSpacings, isotope, peakTolerance, new Tolerance(ToleranceType.PPM, 5));
                     }
                     
                     // Once all the isotopes peaks are assigned, perform the isotopic distribution check
@@ -410,7 +411,7 @@ namespace NeuQuant
         {
             return string.Format("{0} (z = {1}, {2} Spectra)", Peptide, ChargeState, Spectra.Count);
         }
-
+        
         public IEnumerator<NeuQuantFeature> GetEnumerator()
         {
             return _features.GetEnumerator();

@@ -16,6 +16,7 @@ namespace NeuQuant
         public double IsolationMZ { get; private set; }
         public double MatchScore { get; private set; }  
         public PeptideSpectrumMatchScoreType MatchType { get; private set; }
+        public long PeptideID { get; internal set; }
 
         public PeptideSpectrumMatch(ThermoRawFile rawFile, int spectrumNumber,double retentionTime, Peptide peptide, int charge, double isoMZ, double score, PeptideSpectrumMatchScoreType scoreType)
         {

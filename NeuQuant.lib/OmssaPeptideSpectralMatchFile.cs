@@ -27,8 +27,8 @@ namespace NeuQuant
             }
         }
       
-        public OmssaPeptideSpectralMatchFile(string filePath)
-            : base(filePath) { }
+        public OmssaPeptideSpectralMatchFile(string filePath, bool storeMS2Spectra = true)
+            : base(filePath, storeMS2Spectra, PeptideSpectrumMatchScoreType.OmssaEValue) { }
           
 
         public void LoadUserMods(string xmlFilePath)
@@ -73,7 +73,7 @@ namespace NeuQuant
                     ThermoRawFile rawFile;
                     if (rawFiles.TryGetValue(rawfileName, out rawFile))
                     {                        
-                        var psm = new PeptideSpectrumMatch(rawFile, spectrumNumber,rt, peptide, charge, isoMZ, score, PeptideSpectrumMatchScoreType.OmssaEValue);
+                        var psm = new PeptideSpectrumMatch(rawFile, spectrumNumber,rt, peptide, charge, isoMZ, score, ScoreType);
                         _psms.Add(psm);
                         HashSet<int> spectra;
                         if (!UsedRawFiles.TryGetValue(rawFile, out spectra))
@@ -81,7 +81,8 @@ namespace NeuQuant
                             spectra = new HashSet<int>();
                             UsedRawFiles.Add(rawFile, spectra);
                         }
-                        spectra.Add(spectrumNumber);
+                        if (StoreMS2Spectra)
+                            spectra.Add(spectrumNumber);
                     }                   
                 }
             }
@@ -101,6 +102,8 @@ namespace NeuQuant
             base.Dispose();
         }
 
+
+     
     }
 
 }
