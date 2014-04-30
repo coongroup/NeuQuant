@@ -5,6 +5,7 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CSMSL.IO.Thermo;
 using NeuQuant.Processing;
 using WeifenLuo.WinFormsUI.Docking;
 using NeuQuant.IO;
@@ -899,14 +900,16 @@ namespace NeuQuant
             {
                 var psmFile = new OmssaPeptideSpectralMatchFile(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_080_11_MIPS_ITMS_CID_psms.csv");
                 psmFile.SetDataDirectory(@"E:\Desktop\NeuQuant\Omssa PD");
-               
-                psmFile.AddFixedModification(Reagents.K8Plex2);
+
+                Isotopologue twoPlex = Reagents.Isotopologues["NeuCode Duplex"];
+
+                psmFile.AddFixedModification(twoPlex);
                 psmFile.AddFixedModification(new Modification("C2H3NO", "CAM", ModificationSites.C));
 
                 psmFile.LoadUserMods(@"E:\Desktop\NeuQuant\Omssa PD\AverageLys8-119.xml");
 
-                psmFile.SetChannel("Channel 1", "1", Reagents.K8Plex2[0]);
-                psmFile.SetChannel("Channel 2", "1", Reagents.K8Plex2[1]);
+                psmFile.SetChannel("Channel 1", "1", twoPlex[0]);
+                psmFile.SetChannel("Channel 2", "1", twoPlex[1]);
 
                 nqFile = NeuQuantFile.LoadData(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_080_11_MIPS_OMSSA.sqlite", psmFile);
             }).ContinueWith((t2) => LoadNeuQuantFile(nqFile), TaskScheduler.FromCurrentSynchronizationContext());
@@ -921,14 +924,16 @@ namespace NeuQuant
                 psmFile.SetDataDirectory(@"E:\Desktop\NeuQuant\Omssa PD");
                 psmFile.SetRawFile(new ThermoRawFile(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_080_11_MIPS.raw"));
 
-                psmFile.AddFixedModification(Reagents.K8Plex2);
+                Isotopologue twoPlex = Reagents.Isotopologues["NeuCode Duplex"];
+
+                psmFile.AddFixedModification(twoPlex);
                 psmFile.AddFixedModification(new Modification("C2H3NO", "CAM", ModificationSites.C));
                 
                 psmFile.AddVariableModification("Oxidation", new Modification("O", "Oxidation", ModificationSites.M));
                 psmFile.AddVariableModification("Phospho", new Modification("H3PO3", "Phospho", ModificationSites.S | ModificationSites.T | ModificationSites.Y));
 
-                psmFile.SetChannel("Channel 1", "1", Reagents.K8Plex2[0]);
-                psmFile.SetChannel("Channel 2", "1", Reagents.K8Plex2[1]);
+                psmFile.SetChannel("Channel 1", "1", twoPlex[0]);
+                psmFile.SetChannel("Channel 2", "1", twoPlex[1]);
 
                 nqFile = NeuQuantFile.LoadData(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_080_11_MIPS_PD.sqlite", psmFile);
             }).ContinueWith((t2) => LoadNeuQuantFile(nqFile), TaskScheduler.FromCurrentSynchronizationContext());
@@ -1105,13 +1110,14 @@ namespace NeuQuant
             {
                 var psmFile = new OmssaPeptideSpectralMatchFile(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_341_080_111_MIPS_ITMS_CID_psms.csv");
                 psmFile.SetDataDirectory(@"E:\Desktop\NeuQuant\Omssa PD");
-
-                psmFile.AddFixedModification(Reagents.K8Plex3);
+                
+                Isotopologue threePlex = Reagents.Isotopologues["NeuCode Triplex"];
+                psmFile.AddFixedModification(threePlex);
                 psmFile.AddFixedModification(new Modification("C2H3NO", "CAM", ModificationSites.C));
                 psmFile.LoadUserMods(@"E:\Desktop\NeuQuant\Omssa PD\AverageLys8-119.xml");
-                psmFile.SetChannel("Channel 1", "1", Reagents.K8Plex3[0]);
-                psmFile.SetChannel("Channel 2", "1", Reagents.K8Plex3[1]);
-                psmFile.SetChannel("Channel 3", "1", Reagents.K8Plex3[2]);
+                psmFile.SetChannel("Channel 1", "1", threePlex[0]);
+                psmFile.SetChannel("Channel 2", "1", threePlex[1]);
+                psmFile.SetChannel("Channel 3", "1", threePlex[2]);
 
                 nqFile = NeuQuantFile.LoadData(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_341_080_111_MIPS_OMSSA.sqlite", psmFile);
             }).ContinueWith((t2) => LoadNeuQuantFile(nqFile), TaskScheduler.FromCurrentSynchronizationContext());

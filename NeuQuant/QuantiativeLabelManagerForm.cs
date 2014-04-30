@@ -105,7 +105,7 @@ namespace NeuQuant
                 control.LabelComboBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
             }
             UpdateQuantitativeLabelControls();
-            Reagents.WriteXmlOutput();
+            Reagents.Save();
         }
 
         private void modListBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -189,7 +189,7 @@ namespace NeuQuant
                     modListBox.Items.RemoveAt(modListBox.SelectedIndices[i]);
                 }
             modListBox.DataSource = new BindingSource(Reagents.Modifications.Keys,null);
-            Reagents.WriteXmlOutput();
+            Reagents.Save();
         }
     }
 }
