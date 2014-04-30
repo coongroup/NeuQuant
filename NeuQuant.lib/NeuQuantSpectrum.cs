@@ -26,7 +26,7 @@ namespace NeuQuant
             : base(spectrum) { }
 
         public NeuQuantSpectrum(byte[] bytes)
-            : base(NeuQuantSpectrum.ConvertBytesToSpectrum(bytes, bytes.IsCompressed()))
+            : base(ConvertBytesToSpectrum(bytes, bytes.IsCompressed()))
         {
           
         }

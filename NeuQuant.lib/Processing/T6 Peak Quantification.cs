@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using CSMSL.Proteomics;
 
 namespace NeuQuant.Processing
 {
     public partial class Processor
     {
-        public void QuantifyPeaks()
+        public void QuantifyPeaks(bool noiseBandCap = true, double noiseLevel = 3)
         {
             OnMessage("Quantifying Peaks...");
             OnProgress(0);
@@ -18,7 +20,7 @@ namespace NeuQuant.Processing
                 featureWriter.WriteLine("Peptide,Sequence,Z,#PSMS,Channel 1,Channel 2,Log2");
                 foreach (NeuQuantFeatureSet featureSet in FeatureSets)
                 {
-                    var quant = featureSet.Quantify(3);
+                    var quant = featureSet.Quantify(noiseBandCap, noiseLevel);
                     double one = quant[featureSet.Peptide.QuantifiableChannels.Values[0]];
                     double two = quant[featureSet.Peptide.QuantifiableChannels.Values[1]];
                     featureWriter.WriteLine("{0},{1},{2},{3},{4},{5},{6}", featureSet.Peptide.Peptide,featureSet.Peptide.Peptide.Sequence, featureSet.ChargeState,featureSet.PSMs.Count, one, two, Math.Log(two/one, 2));
@@ -37,7 +39,7 @@ namespace NeuQuant.Processing
                     double sumtwo = 0;
                     foreach (var featureSet in peptide.FeatureSets)
                     {
-                        var quant = featureSet.Quantify(3);
+                        var quant = featureSet.Quantify(noiseBandCap, noiseLevel);
                         sumone += quant[featureSet.Peptide.QuantifiableChannels.Values[0]];
                         sumtwo += quant[featureSet.Peptide.QuantifiableChannels.Values[1]];
                     }
@@ -48,6 +50,8 @@ namespace NeuQuant.Processing
            
             OnProgress(0);
         }
+
+        
 
     }
 }

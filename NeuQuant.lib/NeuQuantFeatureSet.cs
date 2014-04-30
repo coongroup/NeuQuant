@@ -1,6 +1,4 @@
-﻿using System.Runtime.Remoting.Messaging;
-using System.Windows.Forms.VisualStyles;
-using CSMSL;
+﻿using CSMSL;
 using CSMSL.Chemistry;
 using CSMSL.IO.Thermo;
 using CSMSL.Proteomics;
@@ -85,7 +83,7 @@ namespace NeuQuant
             }
         }
 
-        public Dictionary<Peptide, double> Quantify(double noiseLevel = 3)
+        public Dictionary<Peptide, double> Quantify(bool noiseBandCap = true, double noiseLevel = 3)
         {
             Dictionary<Peptide, double> quant = new Dictionary<Peptide, double>();
             foreach (var channel in Peptide.QuantifiableChannels.Values)
@@ -93,7 +91,8 @@ namespace NeuQuant
                 IRange<int> range;
                 if (!_featureBounds.TryGetValue(channel, out range))
                 {
-                    quant[channel] = noiseLevel;
+                    // Noise band cap this channel if requested
+                    quant[channel] = noiseBandCap ? noiseLevel : 0;
                     continue;
                 }
 
@@ -103,7 +102,7 @@ namespace NeuQuant
                 for (int i = range.Minimum; i < range.Maximum; i++)
                 {
                     var feature = _features[i];
-                    foreach (var ppmAndIntensity in feature.GetChannelMassErrorAndItensity(channel))
+                    foreach (var ppmAndIntensity in feature.GetChannelMassErrorAndItensity(channel, noiseBandCap, noiseLevel))
                     {
                         ppmErrors.Add(ppmAndIntensity.Item1);
                         intensities.Add(ppmAndIntensity.Item2);
@@ -112,7 +111,8 @@ namespace NeuQuant
 
                 if (intensities.Count == 0)
                 {
-                    quant[channel] = noiseLevel;
+                    // Noise band cap this channel if requested
+                    quant[channel] = noiseBandCap ? noiseLevel : 0;
                     continue;
                 }
 
@@ -141,7 +141,7 @@ namespace NeuQuant
                 {
                     double ppm = ppmErrors[i];
                     double intensity = intensities[i];
-                    if (ppmTolerance.Contains(ppm) && intensity > threshold)
+                    if ((ppmTolerance.Contains(ppm) || double.IsNaN(ppm)) && intensity > threshold)
                     {
                         channelIntensity += intensity;
                         avg++;
@@ -309,7 +309,7 @@ namespace NeuQuant
                         var tinySpectrum = miniSpectrum.Extract(mzRange, systematicThError);
 
                         // Try to assign the peaks to the correct channels
-                        feature.AssignPeaks(tinySpectrum, peptidesInCluster.Values, expectedSpacings, isotope);
+                        feature.AssignPeaks(tinySpectrum, peptidesInCluster.Values, expectedSpacings, isotope, peakTolerance);
                     }
                     
                     // Once all the isotopes peaks are assigned, perform the isotopic distribution check

@@ -71,7 +71,7 @@ namespace NeuQuant
                     ThermoRawFile rawFile;
                     if (rawFiles.TryGetValue(rawfileName, out rawFile))
                     {                        
-                        var psm = new PeptideSpectrumMatch(rawFile, spectrumNumber,rt, peptide, charge, isoMZ, score);
+                        var psm = new PeptideSpectrumMatch(rawFile, spectrumNumber,rt, peptide, charge, isoMZ, score, PeptideSpectrumMatchScoreType.OmssaEValue);
                         _psms.Add(psm);
                         HashSet<int> spectra;
                         if (!UsedRawFiles.TryGetValue(rawFile, out spectra))

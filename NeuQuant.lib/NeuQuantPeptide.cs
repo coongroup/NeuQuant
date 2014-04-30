@@ -42,7 +42,7 @@ namespace NeuQuant
 
         public bool AddPeptideSpectrumMatch(PeptideSpectrumMatch psm)
         {
-            if (Peptide != null && !Peptide.Equals(psm.Peptide)) //!Peptide.Equals(psm.Peptide)
+            if (Peptide != null && !Peptide.Equals(psm.Peptide))
                 return false;
             
             if (PeptideSpectrumMatches.Count == 0)
@@ -101,12 +101,13 @@ namespace NeuQuant
             for (int i = 1; i < QuantifiableChannels.Count; i++)
             {
                 double currentMass = QuantifiableChannels.Keys[i];
+
+                // Find the smallest spacing between any two isotopologues
                 double spacing = currentMass - previousMass;
                 if (spacing < minSpacing)
                 {
                     minSpacing = spacing;
                 }
-             
 
                 // Check for clusters (defined as bigger than 1 Da in mass difference)
                 if (spacing > DaSpacingToDefineCluster)
@@ -125,7 +126,6 @@ namespace NeuQuant
 
             Clusters = clusters.ToArray();
             SmallestTheorecticalMassSpacing = minSpacing;
-            
         }
 
         public void AddFeatureSet(NeuQuantFeatureSet featureSet)
