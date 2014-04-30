@@ -12,8 +12,8 @@ namespace NeuQuant
     /// </summary>
     public static class Reagents
     {
-        public static Dictionary<string, ChemicalFormulaModification> Modifications;
-        public static Dictionary<string, Isotopologue> Isotopologues;
+        private static readonly Dictionary<string, ChemicalFormulaModification> Modifications;
+        private static readonly Dictionary<string, Isotopologue> Isotopologues;
         
         private static readonly string DeafaultModificationPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"NeuQuant\Modifications.xml");
 
@@ -26,6 +26,62 @@ namespace NeuQuant
             Load();
         }
 
+        public static IEnumerable<ChemicalFormulaModification> GetAllModifications()
+        {
+            return Modifications.Values;
+        }
+
+        public static IEnumerable<Isotopologue> GetAllIsotopologue()
+        {
+            return Isotopologues.Values;
+        }
+
+        public static ChemicalFormulaModification GetModification(string name)
+        {
+            return Modifications[name];
+        }
+
+        public static void AddModification(ChemicalFormulaModification modification)
+        {
+            // Add Modification
+            Modifications[modification.Name] = modification;
+            
+            // Alert others
+            OnChanged();
+        }
+
+        public static bool RemoveModification(string name)
+        {
+            if (!Modifications.Remove(name)) 
+                return false;
+
+            OnChanged();
+            return true;
+        }
+
+        public static Isotopologue GetIsotopologue(string name)
+        {
+            return Isotopologues[name];
+        }
+
+        public static void AddIsotopologue(Isotopologue isotopologue)
+        {
+            // Add Modification
+            Isotopologues[isotopologue.Name] = isotopologue;
+            
+            // Alert others
+            OnChanged();
+        }
+
+        public static bool RemoveIsotopologue(string name)
+        {
+            if (!Isotopologues.Remove(name))
+                return false;
+
+            OnChanged();
+            return true;
+        }
+
         /// <summary>
         /// Load the default modification file
         /// If the default modification is missing or corrupted, it will autogenerate it
@@ -36,7 +92,7 @@ namespace NeuQuant
             if (!File.Exists(DeafaultModificationPath))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(DeafaultModificationPath));
-                File.Copy(@"Resources/DefaultModifications.xml", DeafaultModificationPath);
+                File.Copy(@"Resources/DefaultModifications.xml", DeafaultModificationPath, true);
             }
 
             Load(DeafaultModificationPath);
@@ -48,42 +104,51 @@ namespace NeuQuant
         /// <param name="filePath">The path to the modification file</param>
         public static void Load(string filePath)
         {
-            var modsXml = new XmlDocument();
-            modsXml.Load(filePath);
-            new XmlNamespaceManager(modsXml.NameTable);
-            XmlNodeList modificationsNode = modsXml.SelectNodes("//Modifications/Modification");
-            if (modificationsNode != null)
-                foreach (XmlNode node in modificationsNode)
+            try
+            {
+                var modsXml = new XmlDocument();
+                modsXml.Load(filePath);
+                new XmlNamespaceManager(modsXml.NameTable);
+                XmlNodeList modificationsNode = modsXml.SelectNodes("//Modifications/Modification");
+                if (modificationsNode != null)
+                    foreach (XmlNode node in modificationsNode)
+                    {
+                        string name = node.Attributes["name"].Value;
+                        bool isDefault = bool.Parse(node.Attributes["isDefault"].Value);
+                        bool isAminoAcid = bool.Parse(node.Attributes["isAminoAcid"].Value);
+                        XmlNode chemFormNode = node.SelectSingleNode("ChemicalFormula");
+                        string chemicalFormula = chemFormNode.InnerText;
+                        XmlNode modSiteNode = node.SelectSingleNode("ModificationSite");
+                        string modSite = modSiteNode.InnerText;
+                        var site = (ModificationSites) Enum.Parse(typeof (ModificationSites), modSite);
+                        var chemFormMod = new ChemicalFormulaModification(chemicalFormula, name, site, isAminoAcid, isDefault);
+                        Modifications.Add(name, chemFormMod);
+                    }
+                XmlNodeList isotopologuesNode = modsXml.SelectNodes("//Isotopologues/Isotopologue");
+                foreach (XmlNode node in isotopologuesNode)
                 {
                     string name = node.Attributes["name"].Value;
-                    bool isDefault = bool.Parse(node.Attributes["isDefault"].Value);
-                    bool isAminoAcid = bool.Parse(node.Attributes["isAminoAcid"].Value);
-                    XmlNode chemFormNode = node.SelectSingleNode("ChemicalFormula");
-                    string chemicalFormula = chemFormNode.InnerText;
+                    // bool isDefault = bool.Parse(node.Attributes["isDefault"].Value);
                     XmlNode modSiteNode = node.SelectSingleNode("ModificationSite");
                     string modSite = modSiteNode.InnerText;
-                    var site = (ModificationSites)Enum.Parse(typeof(ModificationSites), modSite);
-                    var chemFormMod = new ChemicalFormulaModification(chemicalFormula, name, site, isAminoAcid, isDefault);
-                    Modifications.Add(name, chemFormMod);
+                    var site = (ModificationSites) Enum.Parse(typeof (ModificationSites), modSite);
+                    var isotopologue = new Isotopologue(name, site);
+                    XmlNodeList modList = node.SelectNodes("ModificationID");
+                    ChemicalFormulaModification currentMod;
+                    foreach (XmlNode idNode in modList)
+                    {
+                        string modID = idNode.InnerText;
+                        currentMod = Modifications[modID];
+                        isotopologue.AddModification(currentMod);
+                    }
+                    Isotopologues.Add(name, isotopologue);
                 }
-            XmlNodeList isotopologuesNode = modsXml.SelectNodes("//Isotopologues/Isotopologue");
-            foreach (XmlNode node in isotopologuesNode)
+
+                OnChanged(false);
+            }
+            catch (XmlException e)
             {
-                string name = node.Attributes["name"].Value;
-               // bool isDefault = bool.Parse(node.Attributes["isDefault"].Value);
-                XmlNode modSiteNode = node.SelectSingleNode("ModificationSite");
-                string modSite = modSiteNode.InnerText;
-                var site = (ModificationSites)Enum.Parse(typeof(ModificationSites), modSite);
-                var isotopologue = new Isotopologue(name, site);
-                XmlNodeList modList = node.SelectNodes("ModificationID");
-                ChemicalFormulaModification currentMod;
-                foreach (XmlNode idNode in modList)
-                {
-                    string modID = idNode.InnerText;
-                    currentMod = Modifications[modID];
-                    isotopologue.AddModification(currentMod);
-                }
-                Isotopologues.Add(name, isotopologue);
+                RestoreDefaults();
             }
         }
 
@@ -102,7 +167,8 @@ namespace NeuQuant
         {
             var xmlWriterSettings = new XmlWriterSettings();
             xmlWriterSettings.Indent = true;
-            using (XmlWriter writer = XmlWriter.Create(filePath))
+      
+            using (XmlWriter writer = XmlWriter.Create(filePath, xmlWriterSettings))
             {
                 writer.WriteStartDocument();
                 writer.WriteStartElement("NeuQuantModifications");
@@ -141,6 +207,30 @@ namespace NeuQuant
                 writer.WriteEndDocument();
             }
         }
+
+        public static void RestoreDefaults()
+        {
+            Modifications.Clear();
+            Isotopologues.Clear();
+            Directory.CreateDirectory(Path.GetDirectoryName(DeafaultModificationPath));
+            File.Copy(@"Resources/DefaultModifications.xml", DeafaultModificationPath, true);
+            Load();
+        }
+
+        private static void OnChanged(bool saveToDisk = false)
+        {
+            // Flush to disk
+            if (saveToDisk)
+                Save();
+
+            var handler = Changed;
+            if(handler != null)
+            {
+                handler(null, EventArgs.Empty);
+            }
+        }
+
+        public static event EventHandler Changed;
     }
 }
 

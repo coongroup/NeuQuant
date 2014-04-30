@@ -901,7 +901,7 @@ namespace NeuQuant
                 var psmFile = new OmssaPeptideSpectralMatchFile(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_080_11_MIPS_ITMS_CID_psms.csv");
                 psmFile.SetDataDirectory(@"E:\Desktop\NeuQuant\Omssa PD");
 
-                Isotopologue twoPlex = Reagents.Isotopologues["NeuCode Duplex"];
+                Isotopologue twoPlex = Reagents.GetIsotopologue("NeuCode Duplex");
 
                 psmFile.AddFixedModification(twoPlex);
                 psmFile.AddFixedModification(new Modification("C2H3NO", "CAM", ModificationSites.C));
@@ -924,7 +924,7 @@ namespace NeuQuant
                 psmFile.SetDataDirectory(@"E:\Desktop\NeuQuant\Omssa PD");
                 psmFile.SetRawFile(new ThermoRawFile(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_080_11_MIPS.raw"));
 
-                Isotopologue twoPlex = Reagents.Isotopologues["NeuCode Duplex"];
+                Isotopologue twoPlex = Reagents.GetIsotopologue("NeuCode Duplex");
 
                 psmFile.AddFixedModification(twoPlex);
                 psmFile.AddFixedModification(new Modification("C2H3NO", "CAM", ModificationSites.C));
@@ -1110,8 +1110,8 @@ namespace NeuQuant
             {
                 var psmFile = new OmssaPeptideSpectralMatchFile(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_341_080_111_MIPS_ITMS_CID_psms.csv");
                 psmFile.SetDataDirectory(@"E:\Desktop\NeuQuant\Omssa PD");
-                
-                Isotopologue threePlex = Reagents.Isotopologues["NeuCode Triplex"];
+
+                Isotopologue threePlex = Reagents.GetIsotopologue("NeuCode Triplex");
                 psmFile.AddFixedModification(threePlex);
                 psmFile.AddFixedModification(new Modification("C2H3NO", "CAM", ModificationSites.C));
                 psmFile.LoadUserMods(@"E:\Desktop\NeuQuant\Omssa PD\AverageLys8-119.xml");
@@ -1121,6 +1121,11 @@ namespace NeuQuant
 
                 nqFile = NeuQuantFile.LoadData(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_341_080_111_MIPS_OMSSA.sqlite", psmFile);
             }).ContinueWith((t2) => LoadNeuQuantFile(nqFile), TaskScheduler.FromCurrentSynchronizationContext());
+        }
+
+        private void restoreModsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Reagents.RestoreDefaults();
         }
    
     }

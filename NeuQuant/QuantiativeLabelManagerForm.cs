@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Windows.Forms;
 using CSMSL;
 using CSMSL.Proteomics;
@@ -16,10 +18,22 @@ namespace NeuQuant
         public QuantiativeLabelManagerForm()
         {
             InitializeComponent();
+            Reagents.Changed += Reagents_Changed;
             _activeLabelControls = new List<QuantiativeLabelControl>();
-            modListBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
             siteListBox.Items.AddRange(Enum.GetNames(typeof(ModificationSites)));
-            isotopologueListBox.DataSource = new BindingSource(Reagents.Isotopologues.Keys, null);
+
+            RefreshLists();
+        }
+
+        void Reagents_Changed(object sender, EventArgs e)
+        {
+            RefreshLists();
+        }
+
+        private void RefreshLists()
+        {
+            modListBox.DataSource = new BindingList<ChemicalFormulaModification>(Reagents.GetAllModifications().ToList());
+            isotopologueListBox.DataSource = new BindingList<Isotopologue>(Reagents.GetAllIsotopologue().ToList());
         }
 
         void removeButton_Click2(object sender, EventArgs e)
@@ -40,8 +54,8 @@ namespace NeuQuant
         {
             var newControl = new QuantiativeLabelControl();
             newControl.NameTextBox.Text = "Channel " + _channelCount.ToString();
-            newControl.LabelComboBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
-            newControl.SecondaryLabelComboBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
+            newControl.LabelComboBox.DataSource = new BindingList<ChemicalFormulaModification>(Reagents.GetAllModifications().ToList());
+            newControl.SecondaryLabelComboBox.DataSource = new BindingList<ChemicalFormulaModification>(Reagents.GetAllModifications().ToList());
             AddNewQuantitativeLabel(flowLayoutPanel2, newControl);
             _channelCount++;
             _activeLabelControls.Add(newControl);
@@ -49,63 +63,36 @@ namespace NeuQuant
 
         private void createChannelButton_Click(object sender, EventArgs e)
         {
-            CreateNewMod();
-            //modname, chemicalformula, mod sites. check all of these too.
-        }
-
-        private void CreateNewMod()
-        {
-            //logic to handle adding a channel included here
             string modName = modNameBox.Text;
-            ChemicalFormula currentFormula = null;
-            if (string.IsNullOrEmpty(modName))
+            bool isAmino = aminoAcidRadioButton.Checked;
+            string formula = aminoAcidFormulaBox.Text;
+            if (!isAmino)
             {
-                MessageBox.Show("Specify a Valid Modification Name");
-                return;
+                formula = tagRadioButton.Text;
             }
-            try
-            {
-                if (aminoAcidRadioButton.Checked)
-                {
-                    currentFormula = new ChemicalFormula(this.aminoAcidFormulaBox.Text);
-                }
-                if (tagRadioButton.Checked)
-                {
-                    currentFormula = new ChemicalFormula(this.tagRadioButton.Text);
-                }
-            }
-            catch (Exception exception)
-            {
-                MessageBox.Show("Invalid Chemical Formula");
-                return;
-            }
-            if (siteListBox.CheckedItems.Count == 0)
-            {
-                MessageBox.Show("Select Site(s) of Modification");
-                return;
-            }
+
             var masterSites = ModificationSites.None;
             foreach (var item in siteListBox.CheckedItems)
             {
                 var site = (ModificationSites)Enum.Parse(typeof(ModificationSites), item.ToString());
                 masterSites |= site;
             }
-            var newMod = new ChemicalFormulaModification(currentFormula, modName, masterSites, aminoAcidRadioButton.Checked);
-            if (Reagents.Modifications.ContainsKey(modName))
+
+            CreateNewMod(modName, formula, masterSites, isAmino);
+        }
+
+        private void CreateNewMod(string modName, string formula, ModificationSites sites, bool isAminoAcid)
+        {
+            //logic to handle adding a channel included here
+            if (string.IsNullOrEmpty(modName))
             {
-                Reagents.Modifications[modName] = newMod;
+                MessageBox.Show("Specify a Valid Modification Name");
+                return;
             }
-            else
-            {
-                Reagents.Modifications.Add(modName, newMod);
-            }
-            modListBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
-            foreach (var control in _activeLabelControls)
-            {
-                control.LabelComboBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
-            }
-            UpdateQuantitativeLabelControls();
-            Reagents.Save();
+
+            var newMod = new ChemicalFormulaModification(new ChemicalFormula(formula), modName, sites, isAminoAcid);
+
+            Reagents.AddModification(newMod);
         }
 
         private void modListBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -117,7 +104,7 @@ namespace NeuQuant
         {
             if (modListBox.SelectedItem != null)
             {
-                var currentMod = Reagents.Modifications[modListBox.SelectedItem.ToString()];
+                var currentMod = Reagents.GetModification(modListBox.SelectedItem.ToString());
                 aminoAcidRadioButton.Checked = currentMod.IsAminoAcid;
                 if (currentMod.IsAminoAcid)
                 {
@@ -161,15 +148,15 @@ namespace NeuQuant
                 return;
             }
             var selectedVal = isotopologueListBox.SelectedItem.ToString();
-            var currentIso = Reagents.Isotopologues[selectedVal];
+            var currentIso = Reagents.GetIsotopologue(selectedVal);
             flowLayoutPanel2.Controls.Clear();
             _channelCount = 1;
             foreach (Modification mod in currentIso.GetModifications())
             {
                 var newControl = new QuantiativeLabelControl();
                 newControl.NameTextBox.Text = "Channel " + _channelCount.ToString();
-                newControl.LabelComboBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
-                newControl.SecondaryLabelComboBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
+                newControl.LabelComboBox.DataSource = new BindingList<ChemicalFormulaModification>(Reagents.GetAllModifications().ToList());
+                newControl.SecondaryLabelComboBox.DataSource = new BindingList<ChemicalFormulaModification>(Reagents.GetAllModifications().ToList());
                 newControl.LabelComboBox.SelectedItem = mod.Name;
                 newControl.removeButton.Click += removeButton_Click2;
                 flowLayoutPanel2.Controls.Add(newControl);
@@ -180,15 +167,16 @@ namespace NeuQuant
 
         private void modListBox_KeyPress(object sender, KeyPressEventArgs e)
         {
-            
-            if (e.KeyChar == (char) Keys.Back || e.KeyChar == (char) Keys.Delete)
-                for (int i = modListBox.SelectedIndices.Count - 1; i >= 0; i--)
-                {
-                    var name = modListBox.Items[i].ToString();
-                    Reagents.Modifications.Remove(name);
-                    modListBox.Items.RemoveAt(modListBox.SelectedIndices[i]);
-                }
-            modListBox.DataSource = new BindingSource(Reagents.Modifications.Keys,null);
+            if (e.KeyChar != (char) Keys.Delete)
+                return;
+
+            for (int i = modListBox.SelectedIndices.Count - 1; i >= 0; i--)
+            {
+                var name = modListBox.Items[i].ToString();
+                Reagents.RemoveModification(name);
+                modListBox.Items.RemoveAt(modListBox.SelectedIndices[i]);
+            }
+            modListBox.DataSource = new BindingList<ChemicalFormulaModification>(Reagents.GetAllModifications().ToList());
             Reagents.Save();
         }
     }
