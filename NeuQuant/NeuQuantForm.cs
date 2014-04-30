@@ -1,19 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using NeuQuant.Processing;
 using WeifenLuo.WinFormsUI.Docking;
 using NeuQuant.IO;
-using CSMSL.IO.Thermo;
 using ZedGraph;
-using CSMSL.Spectral;
 using CSMSL.Proteomics;
 using CSMSL.Util.Collections;
 using CSMSL;
@@ -840,7 +835,7 @@ namespace NeuQuant
                 psmFile.AddFixedModification(new Modification("C2H3NO", "CAM", ModificationSites.C));
                 psmFile.LoadUserMods(@"E:\Desktop\NeuQuant\AverageLys8-119.xml");
 
-                NeuQuantFile.LoadData(@"E:\Desktop\NeuQuant\2plex NeuCode Charger\19February2014_duplex_480K_1to1.sqlite", psmFile);
+                NeuQuantFile.LoadData(@"E:\Desktop\NeuQuant\2plex NeuCode Charger\19February2014_duplex_480K_1to1.sqlite", psmFile);               
             }).ContinueWith((t2) => LoadNeuQuantFile(@"E:\Desktop\NeuQuant\2plex NeuCode Charger\19February2014_duplex_480K_1to1.sqlite"), TaskScheduler.FromCurrentSynchronizationContext());
         }
 

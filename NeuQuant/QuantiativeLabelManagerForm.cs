@@ -1,45 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using CSMSL;
 using CSMSL.Proteomics;
 using WeifenLuo.WinFormsUI.Docking;
+using CSMSL.Chemistry;
 
 namespace NeuQuant
 {
     public partial class QuantiativeLabelManagerForm : DockContent
     {
+        private int _channelCount = 1;
+        private readonly List<QuantiativeLabelControl> _activeLabelControls;
+
         public QuantiativeLabelManagerForm()
         {
             InitializeComponent();
-
-            // Add two default, blank chanels
-            AddNewQuantitativeLabel(flowLayoutPanel2, new QuantiativeLabelControl());
-            AddNewQuantitativeLabel(flowLayoutPanel2, new QuantiativeLabelControl());
-
-            // Default templates
-            comboBox1.Items.Add("Duplex NueCode (+8)");
-            comboBox1.Items.Add("Triplex NueCode (+8)");
-            comboBox1.Items.Add("Duplex SILAC (+8)");
-            comboBox1.Items.Add("Triplex SILAC (+4,+8)");
-            comboBox1.Items.Add("Trypsin Duplex NueCode (+8)");
-
-            checkedListBox1.DataSource = Enum.GetValues(typeof (ModificationSites));
-            checkedListBox1.MultiColumn = true;
-            checkedListBox1.ColumnWidth = 50;
-            checkedListBox1.CheckOnClick = true;
-
-            comboBox2.Items.AddRange(new[] {"Amino Acid", "Two Amino Acids", "Chemical Label"});
+            _activeLabelControls = new List<QuantiativeLabelControl>();
+            modListBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
+            siteListBox.Items.AddRange(Enum.GetNames(typeof(ModificationSites)));
+            isotopologueListBox.DataSource = new BindingSource(Reagents.Isotopologues.Keys, null);
         }
 
         void removeButton_Click2(object sender, EventArgs e)
         {
-            Button b = sender as Button;
+            var b = sender as Button;
             b.Parent.Parent.Parent.Controls.Remove(b.Parent.Parent);
         }
 
@@ -51,53 +36,160 @@ namespace NeuQuant
             panel.Controls.Add(control);
         }
 
-        private void SetDefaultQuantitationLabels(Control control, string type)
+        private void button3_Click_1(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(type))
-                return;
-            control.Controls.Clear();
-            switch (type)
+            var newControl = new QuantiativeLabelControl();
+            newControl.NameTextBox.Text = "Channel " + _channelCount.ToString();
+            newControl.LabelComboBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
+            newControl.SecondaryLabelComboBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
+            AddNewQuantitativeLabel(flowLayoutPanel2, newControl);
+            _channelCount++;
+            _activeLabelControls.Add(newControl);
+        }
+
+        private void createChannelButton_Click(object sender, EventArgs e)
+        {
+            CreateNewMod();
+            //modname, chemicalformula, mod sites. check all of these too.
+        }
+
+        private void CreateNewMod()
+        {
+            //logic to handle adding a channel included here
+            string modName = modNameBox.Text;
+            ChemicalFormula currentFormula = null;
+            if (string.IsNullOrEmpty(modName))
             {
-                default:
-                case "Duplex NueCode (+8)":
-                    AddNewQuantitativeLabel(control, new QuantiativeLabelControl("Light", "+8", "Amino Acid", Reagents.K602));
-                    AddNewQuantitativeLabel(control, new QuantiativeLabelControl("Heavy", "+8", "Amino Acid", Reagents.K080));
-                    break;
-                case "Triplex NueCode (+8)":
-                    AddNewQuantitativeLabel(control, new QuantiativeLabelControl("Light", "+8", "Amino Acid", Reagents.K602));
-                    AddNewQuantitativeLabel(control, new QuantiativeLabelControl("Medium", "+8", "Amino Acid", Reagents.K341));
-                    AddNewQuantitativeLabel(control, new QuantiativeLabelControl("Heavy", "+8", "Amino Acid", Reagents.K080));
-                    break;
-                case "Duplex SILAC (+8)":
-                    AddNewQuantitativeLabel(control, new QuantiativeLabelControl("Light", "+0"));
-                    AddNewQuantitativeLabel(control, new QuantiativeLabelControl("Heavy", "+8", "Amino Acid", Reagents.K602));
-                    break;
-                case "Triplex SILAC (+4,+8)":
-                    AddNewQuantitativeLabel(control, new QuantiativeLabelControl("Light", "+0"));
-                    AddNewQuantitativeLabel(control, new QuantiativeLabelControl("Medium", "+4", "Amino Acid", Reagents.K040));
-                    AddNewQuantitativeLabel(control, new QuantiativeLabelControl("Heavy", "+8", "Amino Acid", Reagents.K602));
-                    break;
-                case "Trypsin Duplex NueCode (+8)":
-                    AddNewQuantitativeLabel(control, new QuantiativeLabelControl("Light", "+2", "Two Amino Acids", Reagents.K100, Reagents.R200));
-                    AddNewQuantitativeLabel(control, new QuantiativeLabelControl("Light", "+2", "Two Amino Acids", Reagents.K002, Reagents.R002));
-                    break;
+                MessageBox.Show("Specify a Valid Modification Name");
+                return;
+            }
+            try
+            {
+                if (aminoAcidRadioButton.Checked)
+                {
+                    currentFormula = new ChemicalFormula(this.aminoAcidFormulaBox.Text);
+                }
+                if (tagRadioButton.Checked)
+                {
+                    currentFormula = new ChemicalFormula(this.tagRadioButton.Text);
+                }
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show("Invalid Chemical Formula");
+                return;
+            }
+            if (siteListBox.CheckedItems.Count == 0)
+            {
+                MessageBox.Show("Select Site(s) of Modification");
+                return;
+            }
+            var masterSites = ModificationSites.None;
+            foreach (var item in siteListBox.CheckedItems)
+            {
+                var site = (ModificationSites)Enum.Parse(typeof(ModificationSites), item.ToString());
+                masterSites |= site;
+            }
+            var newMod = new ChemicalFormulaModification(currentFormula, modName, masterSites, aminoAcidRadioButton.Checked);
+            if (Reagents.Modifications.ContainsKey(modName))
+            {
+                Reagents.Modifications[modName] = newMod;
+            }
+            else
+            {
+                Reagents.Modifications.Add(modName, newMod);
+            }
+            modListBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
+            foreach (var control in _activeLabelControls)
+            {
+                control.LabelComboBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
+            }
+            UpdateQuantitativeLabelControls();
+            Reagents.WriteXmlOutput();
+        }
+
+        private void modListBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            UpdateMods();
+        }
+
+        private void UpdateMods()
+        {
+            if (modListBox.SelectedItem != null)
+            {
+                var currentMod = Reagents.Modifications[modListBox.SelectedItem.ToString()];
+                aminoAcidRadioButton.Checked = currentMod.IsAminoAcid;
+                if (currentMod.IsAminoAcid)
+                {
+                    aminoAcidFormulaBox.Text = currentMod.ChemicalFormula.ToString();
+                    chemTagFormBox.Text = "";
+                }
+                else
+                {
+                    chemTagFormBox.Text = currentMod.ChemicalFormula.ToString();
+                    aminoAcidFormulaBox.Text = "";
+                }
+
+                for (int i = 0; i < siteListBox.Items.Count; i++)
+                {
+                    siteListBox.SetItemChecked(i, false);
+                }
+                foreach (var modSite in currentMod.Sites.GetActiveSites())
+                {
+                    for (int i = 0; i < siteListBox.Items.Count; i++)
+                    {
+                        var currentSite =
+                            (ModificationSites) Enum.Parse(typeof (ModificationSites), siteListBox.Items[i].ToString());
+                        if (currentSite == modSite)
+                        {
+                            siteListBox.SetItemChecked(i, true);
+                        }
+                    }
+                }
             }
         }
 
-        private void button3_Click_1(object sender, EventArgs e)
+        private void isotopologueListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            AddNewQuantitativeLabel(flowLayoutPanel2, new QuantiativeLabelControl());
+            UpdateQuantitativeLabelControls();
         }
 
-        private void button4_Click_1(object sender, EventArgs e)
+        private void UpdateQuantitativeLabelControls()
         {
-            SetDefaultQuantitationLabels(flowLayoutPanel2, comboBox1.SelectedItem as string);
+            if (isotopologueListBox.SelectedItem == null)
+            {
+                return;
+            }
+            var selectedVal = isotopologueListBox.SelectedItem.ToString();
+            var currentIso = Reagents.Isotopologues[selectedVal];
+            flowLayoutPanel2.Controls.Clear();
+            _channelCount = 1;
+            foreach (Modification mod in currentIso.GetModifications())
+            {
+                var newControl = new QuantiativeLabelControl();
+                newControl.NameTextBox.Text = "Channel " + _channelCount.ToString();
+                newControl.LabelComboBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
+                newControl.SecondaryLabelComboBox.DataSource = new BindingSource(Reagents.Modifications.Keys, null);
+                newControl.LabelComboBox.SelectedItem = mod.Name;
+                newControl.removeButton.Click += removeButton_Click2;
+                flowLayoutPanel2.Controls.Add(newControl);
+                _channelCount++;
+                _activeLabelControls.Add(newControl);
+            }
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void modListBox_KeyPress(object sender, KeyPressEventArgs e)
         {
             
+            if (e.KeyChar == (char) Keys.Back || e.KeyChar == (char) Keys.Delete)
+                for (int i = modListBox.SelectedIndices.Count - 1; i >= 0; i--)
+                {
+                    var name = modListBox.Items[i].ToString();
+                    Reagents.Modifications.Remove(name);
+                    modListBox.Items.RemoveAt(modListBox.SelectedIndices[i]);
+                }
+            modListBox.DataSource = new BindingSource(Reagents.Modifications.Keys,null);
+            Reagents.WriteXmlOutput();
         }
-
     }
 }

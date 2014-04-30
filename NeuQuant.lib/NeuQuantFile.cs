@@ -1,14 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
 using System.Data.SQLite;
 using CSMSL.IO.Thermo;
-using CSMSL.Spectral;
 using CSMSL.Proteomics;
-using CSMSL;
 using CSMSL.Chemistry;
 using NeuQuant.Processing;
 
