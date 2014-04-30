@@ -47,7 +47,7 @@ namespace NeuQuant
             Modifications[modification.Name] = modification;
             
             // Alert others
-            OnChanged();
+            OnModificationsChanged();
         }
 
         public static bool RemoveModification(string name)
@@ -55,7 +55,7 @@ namespace NeuQuant
             if (!Modifications.Remove(name)) 
                 return false;
 
-            OnChanged();
+            OnModificationsChanged();
             return true;
         }
 
@@ -70,7 +70,7 @@ namespace NeuQuant
             Isotopologues[isotopologue.Name] = isotopologue;
             
             // Alert others
-            OnChanged();
+            OnIsotopologuesChanged();
         }
 
         public static bool RemoveIsotopologue(string name)
@@ -78,7 +78,7 @@ namespace NeuQuant
             if (!Isotopologues.Remove(name))
                 return false;
 
-            OnChanged();
+            OnIsotopologuesChanged();
             return true;
         }
 
@@ -108,43 +108,49 @@ namespace NeuQuant
             {
                 var modsXml = new XmlDocument();
                 modsXml.Load(filePath);
-                new XmlNamespaceManager(modsXml.NameTable);
-                XmlNodeList modificationsNode = modsXml.SelectNodes("//Modifications/Modification");
-                if (modificationsNode != null)
-                    foreach (XmlNode node in modificationsNode)
+                //new XmlNamespaceManager(modsXml.NameTable);
+                foreach (XmlNode node in modsXml.SelectNodes("//Modifications/Modification"))
+                {
+                    string name = node.Attributes["name"].Value;
+                    bool isDefault = bool.Parse(node.Attributes["isDefault"].Value);
+                    bool isAminoAcid = bool.Parse(node.Attributes["isAminoAcid"].Value);
+                    string chemicalFormula = node.SelectSingleNode("ChemicalFormula").InnerText;
+
+                    ModificationSites sites = ModificationSites.None;
+                    foreach (XmlNode siteNode in node.SelectNodes("ModificationSite"))
                     {
-                        string name = node.Attributes["name"].Value;
-                        bool isDefault = bool.Parse(node.Attributes["isDefault"].Value);
-                        bool isAminoAcid = bool.Parse(node.Attributes["isAminoAcid"].Value);
-                        XmlNode chemFormNode = node.SelectSingleNode("ChemicalFormula");
-                        string chemicalFormula = chemFormNode.InnerText;
-                        XmlNode modSiteNode = node.SelectSingleNode("ModificationSite");
-                        string modSite = modSiteNode.InnerText;
+                        string modSite = siteNode.InnerText;
                         var site = (ModificationSites) Enum.Parse(typeof (ModificationSites), modSite);
-                        var chemFormMod = new ChemicalFormulaModification(chemicalFormula, name, site, isAminoAcid, isDefault);
-                        Modifications.Add(name, chemFormMod);
+                        sites |= site;
                     }
-                XmlNodeList isotopologuesNode = modsXml.SelectNodes("//Isotopologues/Isotopologue");
-                foreach (XmlNode node in isotopologuesNode)
+
+                    var chemFormMod = new ChemicalFormulaModification(chemicalFormula, name, sites, isAminoAcid, isDefault);
+                    Modifications.Add(name, chemFormMod);
+                }
+                OnModificationsChanged(false);
+
+                foreach (XmlNode node in modsXml.SelectNodes("//Isotopologues/Isotopologue"))
                 {
                     string name = node.Attributes["name"].Value;
                     // bool isDefault = bool.Parse(node.Attributes["isDefault"].Value);
-                    XmlNode modSiteNode = node.SelectSingleNode("ModificationSite");
-                    string modSite = modSiteNode.InnerText;
-                    var site = (ModificationSites) Enum.Parse(typeof (ModificationSites), modSite);
-                    var isotopologue = new Isotopologue(name, site);
-                    XmlNodeList modList = node.SelectNodes("ModificationID");
-                    ChemicalFormulaModification currentMod;
-                    foreach (XmlNode idNode in modList)
+                    ModificationSites sites = ModificationSites.None;
+                    foreach (XmlNode siteNode in node.SelectNodes("ModificationSite"))
+                    {
+                        string modSite = siteNode.InnerText;
+                        var site = (ModificationSites) Enum.Parse(typeof (ModificationSites), modSite);
+                        sites |= site;
+                    }
+                    var isotopologue = new Isotopologue(name, sites);
+
+                    foreach (XmlNode idNode in node.SelectNodes("ModificationID"))
                     {
                         string modID = idNode.InnerText;
-                        currentMod = Modifications[modID];
-                        isotopologue.AddModification(currentMod);
+                        isotopologue.AddModification(Modifications[modID]);
                     }
+
                     Isotopologues.Add(name, isotopologue);
                 }
-
-                OnChanged(false);
+                OnIsotopologuesChanged(false);
             }
             catch (XmlException e)
             {
@@ -217,20 +223,34 @@ namespace NeuQuant
             Load();
         }
 
-        private static void OnChanged(bool saveToDisk = false)
+        private static void OnModificationsChanged(bool saveToDisk = true)
         {
             // Flush to disk
             if (saveToDisk)
                 Save();
 
-            var handler = Changed;
+            var handler = ModificationsChanged;
             if(handler != null)
             {
                 handler(null, EventArgs.Empty);
             }
         }
 
-        public static event EventHandler Changed;
+        private static void OnIsotopologuesChanged(bool saveToDisk = true)
+        {
+            // Flush to disk
+            if (saveToDisk)
+                Save();
+
+            var handler = IsotopologuesChanged;
+            if (handler != null)
+            {
+                handler(null, EventArgs.Empty);
+            }
+        }
+
+        public static event EventHandler ModificationsChanged;
+        public static event EventHandler IsotopologuesChanged;
     }
 }
 

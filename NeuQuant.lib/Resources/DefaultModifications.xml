@@ -1,51 +1,51 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <NeuQuantModifications>
   <Modifications>
-    <Modification name="K602" isDefault="False" isAminoAcid="True">
+    <Modification name="K602" isDefault="True" isAminoAcid="True">
       <ChemicalFormula>C-6C{13}6N{15}2N-2</ChemicalFormula>
       <ModificationSite>K</ModificationSite>
     </Modification>
-    <Modification name="K521" isDefault="False" isAminoAcid="True">
+    <Modification name="K521" isDefault="True" isAminoAcid="True">
       <ChemicalFormula>C-5C{13}5H-2H{2}2N{15}N-1</ChemicalFormula>
       <ModificationSite>K</ModificationSite>
     </Modification>
-    <Modification name="K440" isDefault="False" isAminoAcid="True">
+    <Modification name="K440" isDefault="True" isAminoAcid="True">
       <ChemicalFormula>C-4C{13}4H-4H{2}4</ChemicalFormula>
       <ModificationSite>K</ModificationSite>
     </Modification>
-    <Modification name="K422" isDefault="False" isAminoAcid="True">
+    <Modification name="K422" isDefault="True" isAminoAcid="True">
       <ChemicalFormula>C-4C{13}4H-2H{2}2N{15}2N-2</ChemicalFormula>
       <ModificationSite>K</ModificationSite>
     </Modification>
-    <Modification name="K341" isDefault="False" isAminoAcid="True">
+    <Modification name="K341" isDefault="True" isAminoAcid="True">
       <ChemicalFormula>C-3C{13}3H-4H{2}4N{15}N-1</ChemicalFormula>
       <ModificationSite>K</ModificationSite>
     </Modification>
-    <Modification name="K080" isDefault="False" isAminoAcid="True">
+    <Modification name="K080" isDefault="True" isAminoAcid="True">
       <ChemicalFormula>H-8H{2}8</ChemicalFormula>
       <ModificationSite>K</ModificationSite>
     </Modification>
-    <Modification name="K100" isDefault="False" isAminoAcid="True">
+    <Modification name="K100" isDefault="True" isAminoAcid="True">
       <ChemicalFormula>C-1C{13}</ChemicalFormula>
       <ModificationSite>K</ModificationSite>
     </Modification>
-    <Modification name="K002" isDefault="False" isAminoAcid="True">
+    <Modification name="K002" isDefault="True" isAminoAcid="True">
       <ChemicalFormula>N{15}2N-2</ChemicalFormula>
       <ModificationSite>K</ModificationSite>
     </Modification>
-    <Modification name="K040" isDefault="False" isAminoAcid="True">
+    <Modification name="K040" isDefault="True" isAminoAcid="True">
       <ChemicalFormula>H-4H{2}4</ChemicalFormula>
       <ModificationSite>K</ModificationSite>
     </Modification>
-    <Modification name="R200" isDefault="False" isAminoAcid="True">
+    <Modification name="R200" isDefault="True" isAminoAcid="True">
       <ChemicalFormula>C-2C{13}2</ChemicalFormula>
       <ModificationSite>R</ModificationSite>
     </Modification>
-    <Modification name="R002" isDefault="False" isAminoAcid="True">
+    <Modification name="R002" isDefault="True" isAminoAcid="True">
       <ChemicalFormula>N{15}2N-2</ChemicalFormula>
       <ModificationSite>R</ModificationSite>
     </Modification>
-    <Modification name="EmptyK" isDefault="False" isAminoAcid="True">
+    <Modification name="EmptyK" isDefault="True" isAminoAcid="True">
       <ChemicalFormula />
       <ModificationSite>K</ModificationSite>
     </Modification>

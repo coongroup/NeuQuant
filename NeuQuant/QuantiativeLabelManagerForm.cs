@@ -18,22 +18,43 @@ namespace NeuQuant
         public QuantiativeLabelManagerForm()
         {
             InitializeComponent();
-            Reagents.Changed += Reagents_Changed;
+            Reagents.ModificationsChanged += ReagentsModificationsChanged;
+            Reagents.IsotopologuesChanged += Reagents_IsotopologuesChanged;
             _activeLabelControls = new List<QuantiativeLabelControl>();
             siteListBox.Items.AddRange(Enum.GetNames(typeof(ModificationSites)));
 
-            RefreshLists();
+            modListBox.DataSource = CurrentModifications;
+            isotopologueListBox.DataSource = CurrentIsotopologues;
+
+            RefreshModifications();
+            RefreshIsotopologues();
         }
 
-        void Reagents_Changed(object sender, EventArgs e)
+        internal static readonly BindingList<ChemicalFormulaModification> CurrentModifications = new BindingList<ChemicalFormulaModification>();
+        internal static readonly BindingList<Isotopologue> CurrentIsotopologues = new BindingList<Isotopologue>();
+
+        void Reagents_IsotopologuesChanged(object sender, EventArgs e)
         {
-            RefreshLists();
+            RefreshIsotopologues();
         }
 
-        private void RefreshLists()
+        void ReagentsModificationsChanged(object sender, EventArgs e)
         {
-            modListBox.DataSource = new BindingList<ChemicalFormulaModification>(Reagents.GetAllModifications().ToList());
-            isotopologueListBox.DataSource = new BindingList<Isotopologue>(Reagents.GetAllIsotopologue().ToList());
+            RefreshModifications();
+        }
+
+        private void RefreshIsotopologues()
+        {
+            CurrentIsotopologues.Clear();
+            foreach (var iso in Reagents.GetAllIsotopologue())
+                CurrentIsotopologues.Add(iso);
+        }
+
+        private void RefreshModifications()
+        {
+            CurrentModifications.Clear();
+            foreach (var mod in Reagents.GetAllModifications())
+                CurrentModifications.Add(mod);
         }
 
         void removeButton_Click2(object sender, EventArgs e)
@@ -54,8 +75,8 @@ namespace NeuQuant
         {
             var newControl = new QuantiativeLabelControl();
             newControl.NameTextBox.Text = "Channel " + _channelCount.ToString();
-            newControl.LabelComboBox.DataSource = new BindingList<ChemicalFormulaModification>(Reagents.GetAllModifications().ToList());
-            newControl.SecondaryLabelComboBox.DataSource = new BindingList<ChemicalFormulaModification>(Reagents.GetAllModifications().ToList());
+            newControl.LabelComboBox.DataSource = CurrentModifications;
+            newControl.SecondaryLabelComboBox.DataSource = CurrentModifications;
             AddNewQuantitativeLabel(flowLayoutPanel2, newControl);
             _channelCount++;
             _activeLabelControls.Add(newControl);
@@ -65,12 +86,7 @@ namespace NeuQuant
         {
             string modName = modNameBox.Text;
             bool isAmino = aminoAcidRadioButton.Checked;
-            string formula = aminoAcidFormulaBox.Text;
-            if (!isAmino)
-            {
-                formula = tagRadioButton.Text;
-            }
-
+            string formula = formulaBox.Text;
             var masterSites = ModificationSites.None;
             foreach (var item in siteListBox.CheckedItems)
             {
@@ -102,38 +118,31 @@ namespace NeuQuant
 
         private void UpdateMods()
         {
-            if (modListBox.SelectedItem != null)
-            {
-                var currentMod = Reagents.GetModification(modListBox.SelectedItem.ToString());
-                aminoAcidRadioButton.Checked = currentMod.IsAminoAcid;
-                if (currentMod.IsAminoAcid)
-                {
-                    aminoAcidFormulaBox.Text = currentMod.ChemicalFormula.ToString();
-                    chemTagFormBox.Text = "";
-                }
-                else
-                {
-                    chemTagFormBox.Text = currentMod.ChemicalFormula.ToString();
-                    aminoAcidFormulaBox.Text = "";
-                }
+            var mod = modListBox.SelectedValue as ChemicalFormulaModification;
 
+            if (mod == null)
+                return;
+
+            aminoAcidRadioButton.Checked = mod.IsAminoAcid;
+            formulaBox.Text = mod.ChemicalFormula.ToString();
+                
+            for (int i = 0; i < siteListBox.Items.Count; i++)
+            {
+                siteListBox.SetItemChecked(i, false);
+            }
+            foreach (var modSite in mod.Sites.GetActiveSites())
+            {
                 for (int i = 0; i < siteListBox.Items.Count; i++)
                 {
-                    siteListBox.SetItemChecked(i, false);
-                }
-                foreach (var modSite in currentMod.Sites.GetActiveSites())
-                {
-                    for (int i = 0; i < siteListBox.Items.Count; i++)
+                    var currentSite =
+                        (ModificationSites) Enum.Parse(typeof (ModificationSites), siteListBox.Items[i].ToString());
+                    if (currentSite == modSite)
                     {
-                        var currentSite =
-                            (ModificationSites) Enum.Parse(typeof (ModificationSites), siteListBox.Items[i].ToString());
-                        if (currentSite == modSite)
-                        {
-                            siteListBox.SetItemChecked(i, true);
-                        }
+                        siteListBox.SetItemChecked(i, true);
                     }
                 }
             }
+            modNameBox.Text = mod.Name;
         }
 
         private void isotopologueListBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -155,8 +164,8 @@ namespace NeuQuant
             {
                 var newControl = new QuantiativeLabelControl();
                 newControl.NameTextBox.Text = "Channel " + _channelCount.ToString();
-                newControl.LabelComboBox.DataSource = new BindingList<ChemicalFormulaModification>(Reagents.GetAllModifications().ToList());
-                newControl.SecondaryLabelComboBox.DataSource = new BindingList<ChemicalFormulaModification>(Reagents.GetAllModifications().ToList());
+                newControl.LabelComboBox.DataSource = CurrentModifications;
+                newControl.SecondaryLabelComboBox.DataSource = CurrentModifications;
                 newControl.LabelComboBox.SelectedItem = mod.Name;
                 newControl.removeButton.Click += removeButton_Click2;
                 flowLayoutPanel2.Controls.Add(newControl);
@@ -164,20 +173,60 @@ namespace NeuQuant
                 _activeLabelControls.Add(newControl);
             }
         }
+ 
 
-        private void modListBox_KeyPress(object sender, KeyPressEventArgs e)
+        private void modListBox_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyChar != (char) Keys.Delete)
+            if (e.KeyCode != Keys.Delete)
                 return;
+           
+           // var name = modListBox.SelectedItem.ToString();
+            var mod = modListBox.SelectedValue as ChemicalFormulaModification;
 
-            for (int i = modListBox.SelectedIndices.Count - 1; i >= 0; i--)
+            if (mod == null)
+                return;
+                //Find associated Isotopolgues;
+
+            if (mod.IsDefault)
             {
-                var name = modListBox.Items[i].ToString();
-                Reagents.RemoveModification(name);
-                modListBox.Items.RemoveAt(modListBox.SelectedIndices[i]);
+                MessageBox.Show(mod+" is a default modification and cannot be deleted", "Cannot Delete",MessageBoxButtons.OK,MessageBoxIcon.Information);
+                return;
             }
-            modListBox.DataSource = new BindingList<ChemicalFormulaModification>(Reagents.GetAllModifications().ToList());
-            Reagents.Save();
+
+
+            List<Isotopologue> isotopoglues = new List<Isotopologue>();
+
+            foreach (Isotopologue iso in Reagents.GetAllIsotopologue())
+            {
+                if (iso.Contains(mod))
+                {
+                    isotopoglues.Add(iso);
+                }
+            }
+
+            if (isotopoglues.Count > 0)
+            {
+                string dependingIso = string.Join(",", isotopoglues.Select(iso => iso.Name));
+                DialogResult result = MessageBox.Show("The following isotopologues depend on this mod:\n(" + dependingIso
+                                                        + ")\nDeleting will also remove these isotopologues!", "Delete the " + mod.Name + " Modification?", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
+                if (result == DialogResult.OK)
+                {
+                    foreach(var iso in isotopoglues)
+                    {
+                        Reagents.RemoveIsotopologue(iso.Name);
+                    }
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            // Nothing depends on it, so remove it
+            Reagents.RemoveModification(mod.Name);
+                
+            
+
         }
     }
 }

@@ -1111,7 +1111,7 @@ namespace NeuQuant
                 var psmFile = new OmssaPeptideSpectralMatchFile(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_341_080_111_MIPS_ITMS_CID_psms.csv");
                 psmFile.SetDataDirectory(@"E:\Desktop\NeuQuant\Omssa PD");
 
-                Isotopologue threePlex = Reagents.GetIsotopologue("NeuCode Triplex");
+              Isotopologue threePlex = Reagents.GetIsotopologue("NeuCode Triplex");
                 psmFile.AddFixedModification(threePlex);
                 psmFile.AddFixedModification(new Modification("C2H3NO", "CAM", ModificationSites.C));
                 psmFile.LoadUserMods(@"E:\Desktop\NeuQuant\Omssa PD\AverageLys8-119.xml");
