@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NeuQuant.IO;
 using LumenWorks.Framework.IO.Csv;
 using System.IO;
 using CSMSL.IO.Thermo;
@@ -34,6 +30,8 @@ namespace NeuQuant
         public void LoadUserMods(string xmlFilePath)
         {
             OmssaModification.LoadOmssaModifications(xmlFilePath);
+            //add try catch here and make public bool
+            //inform user that filepath is invalid.
         }
 
         public override void Open()
