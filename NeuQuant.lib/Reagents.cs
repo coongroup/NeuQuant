@@ -132,7 +132,7 @@ namespace NeuQuant
                 foreach (XmlNode node in modsXml.SelectNodes("//Isotopologues/Isotopologue"))
                 {
                     string name = node.Attributes["name"].Value;
-                    // bool isDefault = bool.Parse(node.Attributes["isDefault"].Value);
+                    //bool isDefault = bool.Parse(node.Attributes["isDefault"].Value);
                     ModificationSites sites = ModificationSites.None;
                     foreach (XmlNode siteNode in node.SelectNodes("ModificationSite"))
                     {

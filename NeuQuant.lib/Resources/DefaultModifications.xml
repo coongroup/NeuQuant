@@ -49,25 +49,39 @@
       <ChemicalFormula />
       <ModificationSite>K</ModificationSite>
     </Modification>
+    <Modification name="Carbamidomethyl" isDefault="True" isAminoAcid="false">
+      <ChemicalFormula>C2H3NO</ChemicalFormula>
+      <ModificationSite>C</ModificationSite>
+    </Modification>
+    <Modification name="Oxidation" isDefault="True" isAminoAcid="false">
+      <ChemicalFormula>O</ChemicalFormula>
+      <ModificationSite>M</ModificationSite>
+    </Modification>
+    <Modification name="Phosphorylation" isDefault="True" isAminoAcid="false">
+      <ChemicalFormula>H3PO3</ChemicalFormula>
+      <ModificationSite>S</ModificationSite>
+      <ModificationSite>T</ModificationSite>
+      <ModificationSite>Y</ModificationSite>
+    </Modification>
   </Modifications>
   <Isotopologues>
-    <Isotopologue name="NeuCode Duplex">
+    <Isotopologue name="NeuCode Duplex" isDefault="True">
       <ModificationSite>K</ModificationSite>
       <ModificationID>K602</ModificationID>
       <ModificationID>K080</ModificationID>
     </Isotopologue>
-    <Isotopologue name="NeuCode Triplex">
+    <Isotopologue name="NeuCode Triplex" isDefault="True">
       <ModificationSite>K</ModificationSite>
       <ModificationID>K602</ModificationID>
       <ModificationID>K341</ModificationID>
       <ModificationID>K080</ModificationID>
     </Isotopologue>
-    <Isotopologue name="SILAC Duplex">
+    <Isotopologue name="SILAC Duplex" isDefault="True">
       <ModificationSite>K</ModificationSite>
       <ModificationID>EmptyK</ModificationID>
       <ModificationID>K602</ModificationID>
     </Isotopologue>
-    <Isotopologue name="SILAC Triplex">
+    <Isotopologue name="SILAC Triplex" isDefault="True">
       <ModificationSite>K</ModificationSite>
       <ModificationID>EmptyK</ModificationID>
       <ModificationID>K040</ModificationID>

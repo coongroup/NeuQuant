@@ -22,6 +22,8 @@ namespace NeuQuant
             Reagents.IsotopologuesChanged += Reagents_IsotopologuesChanged;
             _activeLabelControls = new List<QuantiativeLabelControl>();
             siteListBox.Items.AddRange(Enum.GetNames(typeof(ModificationSites)));
+            siteListBox.Items.RemoveAt(0);
+            siteListBox.Items.Remove(ModificationSites.All);
 
             modListBox.DataSource = CurrentModifications;
             isotopologueListBox.DataSource = CurrentIsotopologues;
@@ -163,13 +165,13 @@ namespace NeuQuant
             foreach (Modification mod in currentIso.GetModifications())
             {
                 var newControl = new QuantiativeLabelControl();
-                newControl.NameTextBox.Text = "Channel " + _channelCount.ToString();
+                newControl.NameTextBox.Text = "Channel " + _channelCount++;
                 newControl.LabelComboBox.DataSource = CurrentModifications;
                 newControl.SecondaryLabelComboBox.DataSource = CurrentModifications;
                 newControl.LabelComboBox.SelectedItem = mod.Name;
                 newControl.removeButton.Click += removeButton_Click2;
                 flowLayoutPanel2.Controls.Add(newControl);
-                _channelCount++;
+             
                 _activeLabelControls.Add(newControl);
             }
         }

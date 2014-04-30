@@ -13,6 +13,7 @@ namespace NeuQuant
             PsmFileImporter importer = new PsmFileImporter();
             //importer.removeButton.Visible = false;
             flowLayoutPanel1.Controls.Add(importer);
+       
         }
 
         
