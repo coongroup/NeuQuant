@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
@@ -31,6 +32,9 @@ namespace NeuQuant
 
         public static Color[] MasterColors = {Color.CornflowerBlue, Color.Sienna, Color.YellowGreen};
 
+        public static readonly BindingList<ChemicalFormulaModification> CurrentModifications = new BindingList<ChemicalFormulaModification>();
+        public static readonly BindingList<Isotopologue> CurrentIsotopologues = new BindingList<Isotopologue>();
+
         #endregion
 
         #region Child Forms
@@ -60,10 +64,29 @@ namespace NeuQuant
         public NeuQuantForm()
         {
             InitializeComponent();
+            Reagents.ModificationsChanged += (sender, e) => RefreshModifications();
+            Reagents.IsotopologuesChanged += (sender, e) => RefreshIsotopologues();
             NeuQuantFile.OnProgess += OnProgress;
             NeuQuantFile.OnMessage += OnMessage;
+
+            RefreshIsotopologues();
+            RefreshModifications();
         }
 
+        private void RefreshIsotopologues()
+        {
+            CurrentIsotopologues.Clear();
+            foreach (var iso in Reagents.GetAllIsotopologue())
+                CurrentIsotopologues.Add(iso);
+        }
+
+        private void RefreshModifications()
+        {
+            CurrentModifications.Clear();
+            foreach (var mod in Reagents.GetAllModifications())
+                CurrentModifications.Add(mod);
+        }
+        
         protected override void OnLoad(EventArgs e)
         {
             Text = ProgramVersion;
@@ -71,7 +94,7 @@ namespace NeuQuant
             _logForm = new TextBoxForm();
             _logForm.Text = "Log";
             _logForm.TextBox.ReadOnly = true;
-            _logForm.Show(dockPanel1, DockState.DockRightAutoHide);
+            _logForm.Show(dockPanel1, DockState.DockBottom);
             RegisterForm(_logForm);
 
             _msSpectrumForm = new GraphForm();
@@ -90,6 +113,7 @@ namespace NeuQuant
             _msSpectrumForm.GraphControl.GraphPane.XAxis.MinorTic.IsInside = false;
             RefreshGraph(_msSpectrumForm.GraphControl);
             RegisterForm(_msSpectrumForm);
+            _msSpectrumForm.Hide();
 
             _xicForm = new GraphForm();
             _xicForm.Text = "eXtracted Ion Chromatograms";
@@ -113,10 +137,9 @@ namespace NeuQuant
             _xicForm.GraphControl.GraphPane.YAxis.MajorTic.IsInside = false;
             _xicForm.GraphControl.GraphPane.YAxis.MinorTic.IsOutside = true;
             _xicForm.GraphControl.GraphPane.YAxis.MinorTic.IsInside = false;
-            
-
             RefreshGraph(_xicForm.GraphControl);
             RegisterForm(_xicForm);
+            _xicForm.Hide();
 
             _spacingForm = new GraphForm();
             _spacingForm.Text = "Peak Spacing";
@@ -127,6 +150,7 @@ namespace NeuQuant
             _spacingForm.Show(dockPanel1, DockState.Document);
             RefreshGraph(_spacingForm.GraphControl);
             RegisterForm(_spacingForm);
+            _spacingForm.Hide();
 
             _histrogramForm = new GraphForm();
             _histrogramForm.Text = "Histrogram";
@@ -134,13 +158,9 @@ namespace NeuQuant
             _histrogramForm.Show(dockPanel1, DockState.Document);
             RefreshGraph(_histrogramForm.GraphControl);
             RegisterForm(_histrogramForm);
-
-            _peptidesForm = new DGVForm("Peptides");
-            _peptidesForm.Show(dockPanel1, DockState.DockBottom);
-            _peptidesForm.DataGridView.RowEnter += PeptideRowEnter;
-            RegisterForm(_peptidesForm);
-
-            _nqFileGeneratorForm = new NeuQuantFileGeneratorForm();
+            _histrogramForm.Hide();
+            
+            _nqFileGeneratorForm = new NeuQuantFileGeneratorForm(this);
             //_nqFileGeneratorForm.Show();
             //_nqFileGeneratorForm.Show(dockPanel1, DockState.Document);
             //RegisterForm(_nqFileGeneratorForm);
@@ -148,18 +168,24 @@ namespace NeuQuant
             _labelManagerForm = new QuantiativeLabelManagerForm();
             _labelManagerForm.DockPanel = dockPanel1;
             RegisterForm(_labelManagerForm);
+            
+            _peptidesForm = new DGVForm("Peptides");
+            _peptidesForm.Show(dockPanel1, DockState.DockRight);
+            _peptidesForm.DataGridView.RowEnter += PeptideRowEnter;
+            RegisterForm(_peptidesForm);
+            _peptidesForm.Hide();
 
             _analysesForm = new TreeViewForm("Analyses");
             _analysesForm.Show(dockPanel1, DockState.DockRight);
             _analysesForm.TreeView.NodeMouseClick += TreeView_NodeMouseClick;
             RegisterForm(_analysesForm);
+            _analysesForm.Hide();
 
             // Link this two forms together so their events are reflected in both
             _spacingForm.LinkForms(_xicForm);
 
             LogMessage(" == " + ProgramVersion + " == ", false);
-
-            //LoadNeuQuantFile(@"E:\Desktop\NeuQuant\2plex NeuCode Charger\19February2014_duplex_480K_1to1.sqlite");
+            
 
             base.OnLoad(e);
         }
@@ -212,6 +238,11 @@ namespace NeuQuant
                 Text = ProgramVersion + " - " + _currentNQFile.FilePath;
                 LoadAnalyses(_currentNQFile, _analysesForm, true);
                 DisplayPeptides(_currentNQFile, _peptidesForm);
+                _peptidesForm.Show();
+                _analysesForm.Show();
+                _xicForm.Show();
+                _msSpectrumForm.Show();
+                _spacingForm.Show();
                 SetStatusText("Ready");
             }, TaskScheduler.FromCurrentSynchronizationContext());
         }
@@ -249,7 +280,15 @@ namespace NeuQuant
                 return;
             }
 
-            progressBar.Value = (int)(percent * progressBar.Maximum);
+            if (percent < 0)
+            {
+                progressBar.Style = ProgressBarStyle.Marquee;
+            }
+            else
+            {
+                progressBar.Style = ProgressBarStyle.Continuous;
+                progressBar.Value = (int) (percent*progressBar.Maximum);
+            }
         }
 
         public void LogMessage(string message, bool timeStamped = true)
@@ -893,28 +932,6 @@ namespace NeuQuant
             PlotSpacing(_spacingForm.GraphControl, featureSet);
         }
 
-        private void Create()
-        {
-            NeuQuantFile nqFile = null;
-            Task t = Task.Factory.StartNew(() =>
-            {
-                var psmFile = new OmssaPeptideSpectralMatchFile(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_080_11_MIPS_ITMS_CID_psms.csv");
-                psmFile.SetDataDirectory(@"E:\Desktop\NeuQuant\Omssa PD");
-
-                Isotopologue twoPlex = Reagents.GetIsotopologue("NeuCode Duplex");
-
-                psmFile.AddFixedModification(twoPlex);
-                psmFile.AddFixedModification(new Modification("C2H3NO", "CAM", ModificationSites.C));
-
-                psmFile.LoadUserMods(@"E:\Desktop\NeuQuant\Omssa PD\AverageLys8-119.xml");
-
-                psmFile.SetChannel("Channel 1", "1", twoPlex[0]);
-                psmFile.SetChannel("Channel 2", "1", twoPlex[1]);
-
-                nqFile = NeuQuantFile.LoadData(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_080_11_MIPS_OMSSA.sqlite", psmFile);
-            }).ContinueWith((t2) => LoadNeuQuantFile(nqFile), TaskScheduler.FromCurrentSynchronizationContext());
-        }
-
         private void CreatePD()
         {
             NeuQuantFile nqFile = null;
@@ -976,6 +993,7 @@ namespace NeuQuant
             {
                 long analysisID = (long) node.Tag;
                 DisplayResults(_currentNQFile, analysisID, _histrogramForm.GraphControl);
+                _histrogramForm.Show();
             }
         }
 
@@ -1058,7 +1076,7 @@ namespace NeuQuant
 
         private void processDataToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            _nqFileGeneratorForm = new NeuQuantFileGeneratorForm();
+            _nqFileGeneratorForm = new NeuQuantFileGeneratorForm(this);
             _nqFileGeneratorForm.Show();
         }
 
@@ -1066,12 +1084,7 @@ namespace NeuQuant
         {
             _labelManagerForm.Show();
         }
-
-        private void createTempToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Create();
-        }
-
+        
         private void AnalyzeFile()
         {
             Task t = Task.Factory.StartNew(() =>
@@ -1102,30 +1115,15 @@ namespace NeuQuant
         {
             CreatePD();
         }
-
-        private void plexToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            NeuQuantFile nqFile = null;
-            Task t = Task.Factory.StartNew(() =>
-            {
-                var psmFile = new OmssaPeptideSpectralMatchFile(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_341_080_111_MIPS_ITMS_CID_psms.csv");
-                psmFile.SetDataDirectory(@"E:\Desktop\NeuQuant\Omssa PD");
-
-              Isotopologue threePlex = Reagents.GetIsotopologue("NeuCode Triplex");
-                psmFile.AddFixedModification(threePlex);
-                psmFile.AddFixedModification(new Modification("C2H3NO", "CAM", ModificationSites.C));
-                psmFile.LoadUserMods(@"E:\Desktop\NeuQuant\Omssa PD\AverageLys8-119.xml");
-                psmFile.SetChannel("Channel 1", "1", threePlex[0]);
-                psmFile.SetChannel("Channel 2", "1", threePlex[1]);
-                psmFile.SetChannel("Channel 3", "1", threePlex[2]);
-
-                nqFile = NeuQuantFile.LoadData(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_341_080_111_MIPS_OMSSA.sqlite", psmFile);
-            }).ContinueWith((t2) => LoadNeuQuantFile(nqFile), TaskScheduler.FromCurrentSynchronizationContext());
-        }
-
+        
         private void restoreModsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Reagents.RestoreDefaults();
+        }
+
+        public void ShowLabelManager()
+        {
+            _labelManagerForm.Show();
         }
    
     }

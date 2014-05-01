@@ -57,7 +57,7 @@
       <ChemicalFormula>O</ChemicalFormula>
       <ModificationSite>M</ModificationSite>
     </Modification>
-    <Modification name="Phosphorylation" isDefault="True" isAminoAcid="false">
+    <Modification name="Phospho" isDefault="True" isAminoAcid="false">
       <ChemicalFormula>H3PO3</ChemicalFormula>
       <ModificationSite>S</ModificationSite>
       <ModificationSite>T</ModificationSite>

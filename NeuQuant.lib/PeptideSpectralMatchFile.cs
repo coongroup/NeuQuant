@@ -72,7 +72,11 @@ namespace NeuQuant
             Samples.Add(sample.Name, sample);
         }
 
-
+        public void SetChannel(string sampleName, string description, Modification modification)
+        {
+            SetChannel(sampleName, description, new[] {modification});
+        }
+        
         public abstract void Open();
         public abstract IEnumerable<PeptideSpectrumMatch> ReadPSMs();
                 

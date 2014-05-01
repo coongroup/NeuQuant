@@ -117,6 +117,14 @@ namespace NeuQuant
                                         {
                                             peptide.SetModification(modification, residue);
                                         }
+                                        else
+                                        {
+                                            modification = Reagents.GetModification(modName);
+                                            if (modification != null)
+                                                peptide.SetModification(modification, residue);
+                                        }
+
+
                                     }
                                 }
                                

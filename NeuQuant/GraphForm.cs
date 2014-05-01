@@ -20,7 +20,7 @@ namespace NeuQuant
         public void LinkForms(GraphForm form)
         {
             GraphControls.Add(form.GraphControl);
-            form.GraphControls.Add(this.GraphControl);
+            form.GraphControls.Add(GraphControl);
             LinkedGraphForms.Add(form);
             form.LinkedGraphForms.Add(this);
         }

@@ -220,7 +220,8 @@ namespace NeuQuant.IO
 
         public static NeuQuantFile LoadData(string outputFile, PeptideSpectralMatchFile psmFile, bool compressSpectra = false)
         {
-            var file = NeuQuantFile.Create(outputFile);
+            var file = Create(outputFile);
+            OnProgressUpdate(file, -1);
             file.Open();
             file.LoadData(psmFile, compressSpectra);
             return file;

@@ -1,4 +1,5 @@
-﻿using CSMSL.Proteomics;
+﻿using System.ComponentModel;
+using CSMSL.Proteomics;
 using CSMSL;
 using System.Collections.Generic;
 using System;
@@ -21,7 +22,7 @@ namespace NeuQuant
         {
             Modifications = new Dictionary<string, ChemicalFormulaModification>();
             Isotopologues = new Dictionary<string, Isotopologue>();
-            
+          
             // Load the default modification file
             Load();
         }
@@ -38,7 +39,9 @@ namespace NeuQuant
 
         public static ChemicalFormulaModification GetModification(string name)
         {
-            return Modifications[name];
+            ChemicalFormulaModification mod = null;
+            Modifications.TryGetValue(name, out mod);
+            return mod;
         }
 
         public static void AddModification(ChemicalFormulaModification modification)
@@ -54,6 +57,7 @@ namespace NeuQuant
         {
             if (!Modifications.Remove(name)) 
                 return false;
+            
 
             OnModificationsChanged();
             return true;

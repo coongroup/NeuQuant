@@ -18,46 +18,16 @@ namespace NeuQuant
         public QuantiativeLabelManagerForm()
         {
             InitializeComponent();
-            Reagents.ModificationsChanged += ReagentsModificationsChanged;
-            Reagents.IsotopologuesChanged += Reagents_IsotopologuesChanged;
+            
             _activeLabelControls = new List<QuantiativeLabelControl>();
             siteListBox.Items.AddRange(Enum.GetNames(typeof(ModificationSites)));
             siteListBox.Items.RemoveAt(0);
             siteListBox.Items.Remove(ModificationSites.All);
 
-            modListBox.DataSource = CurrentModifications;
-            isotopologueListBox.DataSource = CurrentIsotopologues;
-
-            RefreshModifications();
-            RefreshIsotopologues();
+            modListBox.DataSource = NeuQuantForm.CurrentModifications;
+            isotopologueListBox.DataSource = NeuQuantForm.CurrentIsotopologues;
         }
-
-        internal static readonly BindingList<ChemicalFormulaModification> CurrentModifications = new BindingList<ChemicalFormulaModification>();
-        internal static readonly BindingList<Isotopologue> CurrentIsotopologues = new BindingList<Isotopologue>();
-
-        void Reagents_IsotopologuesChanged(object sender, EventArgs e)
-        {
-            RefreshIsotopologues();
-        }
-
-        void ReagentsModificationsChanged(object sender, EventArgs e)
-        {
-            RefreshModifications();
-        }
-
-        private void RefreshIsotopologues()
-        {
-            CurrentIsotopologues.Clear();
-            foreach (var iso in Reagents.GetAllIsotopologue())
-                CurrentIsotopologues.Add(iso);
-        }
-
-        private void RefreshModifications()
-        {
-            CurrentModifications.Clear();
-            foreach (var mod in Reagents.GetAllModifications())
-                CurrentModifications.Add(mod);
-        }
+        
 
         void removeButton_Click2(object sender, EventArgs e)
         {
@@ -77,8 +47,8 @@ namespace NeuQuant
         {
             var newControl = new QuantiativeLabelControl();
             newControl.NameTextBox.Text = "Channel " + _channelCount.ToString();
-            newControl.LabelComboBox.DataSource = CurrentModifications;
-            newControl.SecondaryLabelComboBox.DataSource = CurrentModifications;
+            newControl.LabelComboBox.DataSource = NeuQuantForm.CurrentModifications; ;
+            newControl.SecondaryLabelComboBox.DataSource = NeuQuantForm.CurrentModifications; ;
             AddNewQuantitativeLabel(flowLayoutPanel2, newControl);
             _channelCount++;
             _activeLabelControls.Add(newControl);
@@ -166,8 +136,8 @@ namespace NeuQuant
             {
                 var newControl = new QuantiativeLabelControl();
                 newControl.NameTextBox.Text = "Channel " + _channelCount++;
-                newControl.LabelComboBox.DataSource = CurrentModifications;
-                newControl.SecondaryLabelComboBox.DataSource = CurrentModifications;
+                newControl.LabelComboBox.DataSource = NeuQuantForm.CurrentModifications; ;
+                newControl.SecondaryLabelComboBox.DataSource = NeuQuantForm.CurrentModifications; ;
                 newControl.LabelComboBox.SelectedItem = mod.Name;
                 newControl.removeButton.Click += removeButton_Click2;
                 flowLayoutPanel2.Controls.Add(newControl);
