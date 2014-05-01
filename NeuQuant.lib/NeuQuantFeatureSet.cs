@@ -242,7 +242,7 @@ namespace NeuQuant
             }
         }
 
-        public void FindPeaks(Tolerance peakTolerance, int numberOfIsotopes = 3, double systematicThError = 0.0, bool checkIsotopicDistribuition = true, double isotopicPercentError = 0.25)
+        public void FindPeaks(Tolerance peakTolerance, int numberOfIsotopes = 3, double systematicThError = 0.0, bool checkIsotopicDistribuition = true, double isotopicPercentError = 0.25, double lowerSpacingPercent = 0.25, double upperSpacingPercent = 0.15)
         {
             // Private store of all the features in this feature set
             _features = new List<NeuQuantFeature>();
@@ -250,12 +250,12 @@ namespace NeuQuant
             if (Peptide.ContainsIsotopologue)
             {
                 // NeuCode (with or without clusters)
-                NeuCodeFindPeaks(peakTolerance, numberOfIsotopes, systematicThError, checkIsotopicDistribuition, isotopicPercentError);
+                NeuCodeFindPeaks(peakTolerance, numberOfIsotopes, systematicThError, checkIsotopicDistribuition, isotopicPercentError, lowerSpacingPercent, upperSpacingPercent);
             }
             else if (Peptide.ContainsMultipleClusters)
             {
                 // SILAC (only clusters, no isotopologues to worry about)
-                SilacFindPeaks(peakTolerance, numberOfIsotopes, systematicThError, checkIsotopicDistribuition, isotopicPercentError);
+                SilacFindPeaks(peakTolerance, numberOfIsotopes, systematicThError, checkIsotopicDistribuition, isotopicPercentError, lowerSpacingPercent, upperSpacingPercent);
             }
             else if (Peptide.ContainsQuantitativeChannel)
             {
@@ -267,7 +267,7 @@ namespace NeuQuant
             }
         }
 
-        private void SilacFindPeaks(Tolerance peakTolerance, int numberOfIsotopes, double systematicThError, bool checkIsotopicDistribuition, double isotopicPercentError)
+        private void SilacFindPeaks(Tolerance peakTolerance, int numberOfIsotopes, double systematicThError, bool checkIsotopicDistribuition, double isotopicPercentError, double lowerSpacingPercent = 0.25, double upperSpacingPercent = 0.15)
         {
              // Loop over all the spectra in the feature
             foreach (var miniSpectrum in Spectra)
@@ -305,7 +305,7 @@ namespace NeuQuant
             }
         }
 
-        private void NeuCodeFindPeaks(Tolerance peakTolerance, int numberOfIsotopes = 3, double systematicThError = 0.0, bool checkIsotopicDistribuition = true, double isotopicPercentError = 0.25)
+        private void NeuCodeFindPeaks(Tolerance peakTolerance, int numberOfIsotopes = 3, double systematicThError = 0.0, bool checkIsotopicDistribuition = true, double isotopicPercentError = 0.25, double lowerSpacingPercent = 0.25, double upperSpacingPercent = 0.15)
         {
             // Loop over all the spectra in the feature
             foreach (var miniSpectrum in Spectra)
@@ -343,7 +343,7 @@ namespace NeuQuant
                         var tinySpectrum = miniSpectrum.Extract(mzRange, systematicThError);
 
                         // Try to assign the peaks to the correct channels
-                        feature.AssignPeaks(tinySpectrum, peptidesInCluster.Values, expectedSpacings, isotope, peakTolerance, new Tolerance(ToleranceType.PPM, 5));
+                        feature.AssignPeaks(tinySpectrum, peptidesInCluster.Values, expectedSpacings, isotope, peakTolerance, new Tolerance(ToleranceType.PPM, 5), lowerSpacingPercent, upperSpacingPercent);
                     }
                     
                     // Once all the isotopes peaks are assigned, perform the isotopic distribution check

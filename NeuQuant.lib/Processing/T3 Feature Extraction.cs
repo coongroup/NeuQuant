@@ -15,6 +15,11 @@ namespace NeuQuant.Processing
         private double[] _times;
         private long _previousFileID = -1;
 
+        public IEnumerable<NeuQuantFeatureSet> ExtractFeatureSets(NeuQuantPeptide peptide)
+        {
+            return ExtractFeatureSets(peptide, NumberOfIsotopesToQuantify, MinimumSN, MaximumSN);
+        }
+
         public IEnumerable<NeuQuantFeatureSet> ExtractFeatureSets(NeuQuantPeptide peptide, int numberOfIsotopes, double minimumSN = 0, double maximumSN = double.MaxValue)
         {
             // Grab the smallest and biggest mass for this peptide (clusters included)

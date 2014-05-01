@@ -189,8 +189,7 @@ namespace NeuQuant.IO
                         id INTEGER PRIMARY KEY ASC,
                         analysisID INT,
                         key TEXT,
-                        value BLOB,
-                        valueType TEXT)";
+                        value TEXT)";
                 new SQLiteCommand(sql, conn).ExecuteNonQuery();
 
                 // Analysis Parameters

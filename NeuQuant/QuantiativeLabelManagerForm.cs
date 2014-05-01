@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Windows.Forms;
 using CSMSL;
@@ -13,13 +12,11 @@ namespace NeuQuant
     public partial class QuantiativeLabelManagerForm : DockContent
     {
         private int _channelCount = 1;
-        private readonly List<QuantiativeLabelControl> _activeLabelControls;
 
         public QuantiativeLabelManagerForm()
         {
             InitializeComponent();
             
-            _activeLabelControls = new List<QuantiativeLabelControl>();
             siteListBox.Items.AddRange(Enum.GetNames(typeof(ModificationSites)));
             siteListBox.Items.RemoveAt(0);
             siteListBox.Items.Remove(ModificationSites.All);
@@ -28,10 +25,12 @@ namespace NeuQuant
             isotopologueListBox.DataSource = NeuQuantForm.CurrentIsotopologues;
         }
         
-
         void removeButton_Click2(object sender, EventArgs e)
         {
             var b = sender as Button;
+            if (b == null)
+                return;
+
             b.Parent.Parent.Parent.Controls.Remove(b.Parent.Parent);
         }
 
@@ -46,12 +45,11 @@ namespace NeuQuant
         private void button3_Click_1(object sender, EventArgs e)
         {
             var newControl = new QuantiativeLabelControl();
-            newControl.NameTextBox.Text = "Channel " + _channelCount.ToString();
+            newControl.NameTextBox.Text = "Channel " + _channelCount;
             newControl.LabelComboBox.DataSource = NeuQuantForm.CurrentModifications; ;
             newControl.SecondaryLabelComboBox.DataSource = NeuQuantForm.CurrentModifications; ;
             AddNewQuantitativeLabel(flowLayoutPanel2, newControl);
             _channelCount++;
-            _activeLabelControls.Add(newControl);
         }
 
         private void createChannelButton_Click(object sender, EventArgs e)
@@ -83,6 +81,20 @@ namespace NeuQuant
             Reagents.AddModification(newMod);
         }
 
+        private void SaveIsotopologue(string name)
+        {
+            Isotopologue isotopologue = new Isotopologue(name);
+            foreach (var control in flowLayoutPanel2.Controls.Cast<QuantiativeLabelControl>())
+            {
+                string channelName = control.ChannelName;
+                Modification mod1 = control.Modification1;
+                Modification mod2 = control.Modification2;
+                if(mod1 != null)
+                    isotopologue.AddModification(mod1);
+            }
+            Reagents.AddIsotopologue(isotopologue);
+        }
+
         private void modListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             UpdateMods();
@@ -96,7 +108,7 @@ namespace NeuQuant
                 return;
 
             aminoAcidRadioButton.Checked = mod.IsAminoAcid;
-            formulaBox.Text = mod.ChemicalFormula.ToString();
+            formulaBox.Text = mod.ChemicalFormula.ToString(" ");
                 
             for (int i = 0; i < siteListBox.Items.Count; i++)
             {
@@ -124,35 +136,30 @@ namespace NeuQuant
 
         private void UpdateQuantitativeLabelControls()
         {
-            if (isotopologueListBox.SelectedItem == null)
-            {
+            Isotopologue isotopologue = isotopologueListBox.SelectedValue as Isotopologue;
+
+            if (isotopologue == null)
                 return;
-            }
-            var selectedVal = isotopologueListBox.SelectedItem.ToString();
-            var currentIso = Reagents.GetIsotopologue(selectedVal);
+           
             flowLayoutPanel2.Controls.Clear();
             _channelCount = 1;
-            foreach (Modification mod in currentIso.GetModifications())
+            foreach (var mod in isotopologue.GetModifications())
             {
                 var newControl = new QuantiativeLabelControl();
                 newControl.NameTextBox.Text = "Channel " + _channelCount++;
-                newControl.LabelComboBox.DataSource = NeuQuantForm.CurrentModifications; ;
-                newControl.SecondaryLabelComboBox.DataSource = NeuQuantForm.CurrentModifications; ;
-                newControl.LabelComboBox.SelectedItem = mod.Name;
+                newControl.LabelComboBox.DataSource = NeuQuantForm.CurrentModifications; 
+                newControl.SecondaryLabelComboBox.DataSource = NeuQuantForm.CurrentModifications;
+                newControl.LabelComboBox.SelectedItem = mod;
                 newControl.removeButton.Click += removeButton_Click2;
                 flowLayoutPanel2.Controls.Add(newControl);
-             
-                _activeLabelControls.Add(newControl);
             }
         }
- 
 
         private void modListBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode != Keys.Delete)
                 return;
-           
-           // var name = modListBox.SelectedItem.ToString();
+      
             var mod = modListBox.SelectedValue as ChemicalFormulaModification;
 
             if (mod == null)
@@ -199,6 +206,11 @@ namespace NeuQuant
                 
             
 
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            SaveIsotopologue(textBox1.Text);
         }
     }
 }

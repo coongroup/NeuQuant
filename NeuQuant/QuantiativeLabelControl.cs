@@ -9,51 +9,39 @@ namespace NeuQuant
         public QuantiativeLabelControl()
         {
             InitializeComponent();
-            this.LabelType.SelectedIndex = 0;
+            LabelType.SelectedIndex = 0;
         }
 
-        public QuantiativeLabelControl(string name, string nominalmass, string labeltype = "", Modification modification1 = null, Modification modification2 = null)
-            :this()
-        {
+        public string ChannelName { get { return NameTextBox.Text; } }
 
+        public Modification Modification1
+        {
+            get { return LabelComboBox.SelectedItem as Modification; }
         }
 
-        private void SetState()
+        public Modification Modification2
         {
-            
-        }
-
-
-
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            SetState();
-        }
-
-        private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            SetState();
+            get { return SecondaryLabelComboBox.SelectedItem as Modification; }
         }
 
         private void LabelType_SelectedValueChanged(object sender, EventArgs e)
         {
-            if (this.LabelType.SelectedItem != null)
+            if (LabelType.SelectedItem != null)
             {
-                string selectedVal = this.LabelType.SelectedItem.ToString();
+                string selectedVal = LabelType.SelectedItem.ToString();
                 switch (selectedVal)
                 {
                     case ("Amino Acid"):
-                        this.LabelComboBox.Visible = true;
-                        this.SecondaryLabelComboBox.Visible = false;
+                        LabelComboBox.Visible = true;
+                        SecondaryLabelComboBox.Visible = false;
                         break;
                     case ("Two Amino Acids"):
-                        this.LabelComboBox.Visible = true;
-                        this.SecondaryLabelComboBox.Visible = true;
+                        LabelComboBox.Visible = true;
+                        SecondaryLabelComboBox.Visible = true;
                         break;
-
                     case ("Chemical Label"):
-                        this.LabelComboBox.Visible = true;
-                        this.SecondaryLabelComboBox.Visible = false;
+                        LabelComboBox.Visible = true;
+                        SecondaryLabelComboBox.Visible = false;
                         break;
                     default:
                         break;

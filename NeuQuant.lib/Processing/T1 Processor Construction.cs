@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Windows.Forms.VisualStyles;
 using CSMSL;
 using CSMSL.Chemistry;
 using NeuQuant.IO;
@@ -21,7 +22,9 @@ namespace NeuQuant.Processing
         public double MaximumSN { get; set; }
         public double MinimumResolution { get; set; }
         public double MaximumRtRangePerFeature { get; set; }
-
+        public double LowerSpacingPercent { get; set; }
+        public double UpperSpacingPercent { get; set; }    
+    
         public double IsotopicDistributionPercentError { get; set; }
 
         public bool NoiseBandCap { get; set; }
@@ -36,9 +39,7 @@ namespace NeuQuant.Processing
         public long ID { get; internal set; }
 
         private bool IsOpen { get; set; }
-
-        public string BaseDirectory { get { return Path.GetDirectoryName(NqFile.FilePath); } }
-
+     
         public Processor(NeuQuantFile nqFile)
         {
             NqFile = nqFile;
@@ -46,7 +47,7 @@ namespace NeuQuant.Processing
 
         public Processor(NeuQuantFile nqFile, string name = "Analysis", int isotopesToQuantify = 3, double minRtDelta = 0.25, double maxRtDelta = 0.25, 
             double resolution = 240000, double resolutionAt = 400, double quantAtPeakHeight = 10, bool checkIsotopicDistribution = true,
-            bool noiseBandCap = true)
+            bool noiseBandCap = true, double lowerSpacingPercent = 0.25, double upperSpacingPercent = 0.15)
         {
             NqFile = nqFile;
             NumberOfIsotopesToQuantify = isotopesToQuantify;
@@ -57,6 +58,9 @@ namespace NeuQuant.Processing
 
             NoiseBandCap = noiseBandCap;
             UseIsotopicDistribution = checkIsotopicDistribution;
+            
+            LowerSpacingPercent = lowerSpacingPercent;
+            UpperSpacingPercent = upperSpacingPercent;
 
             Name = name;
             MinimumSN = 3;
@@ -107,7 +111,7 @@ namespace NeuQuant.Processing
             // handy: http://stackoverflow.com/questions/737151/how-to-get-the-list-of-properties-of-a-class
             foreach(var prop in GetType().GetProperties())
             {
-                NqFile.SaveAnalysisParameter(analysisID, prop.Name, prop.GetValue(this, null));
+                NqFile.SaveAnalysisParameter(analysisID, prop.Name, prop.GetValue(this, null).ToString());
             }
 
             NqFile.EndTranscation();
@@ -115,9 +119,36 @@ namespace NeuQuant.Processing
             return analysisID;
         }
 
-        public void SetValue(string propertyName, object value)
-        {
 
+        private static readonly Dictionary<Type, Func<string, object>> Converter = new Dictionary<Type, Func<string, object>>()
+        {
+            {typeof (Int32), s => Int32.Parse(s)},
+            {typeof (Int64), s => Int64.Parse(s)},
+            {typeof (double), s =>
+                {
+                    double d;
+                    if (!double.TryParse(s, out d))
+                        d = s.Equals(double.MaxValue.ToString()) ? double.MaxValue : double.MinValue;
+                    return d;
+                }
+            },
+            {typeof (string), s => s},
+            {typeof(bool), s => bool.Parse(s)},
+            {typeof(Tolerance), s=> new Tolerance(s)}
+        };
+
+        internal bool SetValue(string propertyName, string value)
+        {
+            var prop = typeof (Processor).GetProperty(propertyName);
+            if (prop == null)
+                return false;
+           
+            var convertor = Converter[prop.PropertyType];
+            var obj = convertor(value);
+
+            prop.SetValue(this, obj, null);
+            
+            return true;
         }
 
         #region Close/Dispose

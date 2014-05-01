@@ -68,6 +68,7 @@ namespace NeuQuant
         public NeuQuantForm()
         {
             InitializeComponent();
+            
             Reagents.ModificationsChanged += (sender, e) => RefreshModifications();
             Reagents.IsotopologuesChanged += (sender, e) => RefreshIsotopologues();
             NeuQuantFile.OnProgess += OnProgress;
@@ -190,6 +191,7 @@ namespace NeuQuant
             _peptidesForm = new DGVForm("Peptides");
             _peptidesForm.Show(dockPanel1, DockState.DockRight);
             _peptidesForm.DataGridView.RowEnter += PeptideRowEnter;
+            _peptidesForm.DataGridView.AlternatingRowsDefaultCellStyle.BackColor = Color.LightBlue;
             RegisterForm(_peptidesForm);
             _peptidesForm.Hide();
 
@@ -257,9 +259,11 @@ namespace NeuQuant
                 _currentNQFile = file;              
                 _currentNQFile.Open();
 
+                // TODO figure out loading default processor.
                 Processor processor = null; //_currentNQFile.TryGetLastProcessor(out processor) ? processor : 
                 _currentProcessor = new Processor(_currentNQFile, "Analysis 1", 3, 0.75, 0.75, -10, checkIsotopicDistribution: true, noiseBandCap: false);
-                
+                _currentProcessor.Open();
+
                 LogMessage("Loaded NeuQuant File " + _currentNQFile.FilePath);
                
             }).ContinueWith((t2) =>
@@ -441,10 +445,10 @@ namespace NeuQuant
 
         private void PlotSpacing(ZedGraphControl control, NeuQuantFeatureSet featureSet, double deltaRT = 0.75)
         {
-            if (_currentNQFile == null || featureSet == null)
+            if (_currentNQFile == null || featureSet == null || _currentProcessor == null)
                 return;
 
-            if (!featureSet.Peptide.ContainsIsotopologue)
+            if (!featureSet.Peptide.ContainsQuantitativeChannel)
                 return;
 
             if (featureSet.Spectra.Count == 0)
@@ -453,19 +457,27 @@ namespace NeuQuant
             double minRT = featureSet.MinimumRetentionTime;
             double maxRT = featureSet.MaximumRetentionTime;
             int charge = featureSet.ChargeState;
-            double bestRT = featureSet.BestPSM.RetentionTime;
-            
+         
             ClearGraph(control);
             
-
             var isotopologues = featureSet.Peptide.QuantifiableChannels.Values;
-            control.GraphPane.Title.Text = "";
-
+            control.GraphPane.Title.Text = "Spacing for "+featureSet.Peptide;
+            
             int colorI = 0;
             double[] expectedSpacings = Isotopologue.GetExpectedSpacings(isotopologues, charge);
 
             SymbolType[] symbols = {SymbolType.Circle, SymbolType.Square, SymbolType.Triangle};
-         
+
+            double minSpacing = expectedSpacings.Min();
+
+            bool useMDa = minSpacing < 1;
+            double factor = useMDa ? 1000 : 1;
+
+            double biggestSpacing = 0;
+
+            double minTolerance = 0.4;
+            double maxTolerance = 1.15;
+
             int index = 0;
             double totalSpacing = 0;
             foreach (double spacings in expectedSpacings)
@@ -477,59 +489,61 @@ namespace NeuQuant
                     double[] spacingsArray = new double[featureSet.NumberOfFeatures];
                     double[] times = new double[featureSet.NumberOfFeatures];
                     int i = 0;
-                    foreach (var spectrum in featureSet.Select(fs => fs.Spectrum))
+                    foreach (var feature in featureSet)
                     {
                         double spacing = 0;
                         Peptide iso1 = isotopologues[0];
                         Peptide iso2 = isotopologues[index + 1];
 
-                        double mz1 = iso1.ToMz(charge, isotope);
-                        double mz2 = iso2.ToMz(charge, isotope);
-
-                        var range1 = new MzRange(mz1, Tolerance.FromPPM(15));
-                        var peak1 = spectrum.GetClosestPeak(range1);
-                      
-                        var range2 = new MzRange(mz2, Tolerance.FromPPM(15));
-                        var peak2 = spectrum.GetClosestPeak(range2);
-                
+                        var peak1 = feature.GetChannelpeak(iso1, isotope);
+                        var peak2 = feature.GetChannelpeak(iso2, isotope);
+                        
                         if(peak1 != null && peak2 != null)
-                            spacing = peak2.MZ - peak1.MZ;
+                            spacing = peak2.X - peak1.X;
 
-                        times[i] = spectrum.RetentionTime;
-                        spacingsArray[i] = spacing * 1000;
+                        times[i] = feature.RetentionTime;
+                        spacingsArray[i] = spacing * factor;
+                        if (spacingsArray[i] > biggestSpacing)
+                        {
+                            biggestSpacing = spacingsArray[i];
+                        }
                         i++;
                     }
                     var pointPairList = new PointPairList(times, spacingsArray);
-                    LineItem item = control.GraphPane.AddCurve("Spacing for isotope " + isotope, pointPairList, color, symbols[isotope]);
+                    LineItem item = control.GraphPane.AddCurve("Isotope " + isotope, pointPairList, color, symbols[isotope]);
                     item.Line.IsVisible = false;
                     item.Symbol.Size = 10f;
                     item.Symbol.Border.Width = 2f;
 
-                    var pointPairList2 = new PointPairList(new[] { minRT, maxRT }, new[] { totalSpacing * 1000, totalSpacing * 1000 });
+                    double expectedSpacing = totalSpacing*factor;
 
-                    LineObj expectedLine = new LineObj(color, 0, totalSpacing * 1000, 1, totalSpacing * 1000);
+                    LineObj expectedLine = new LineObj(color, 0, expectedSpacing, 1, expectedSpacing);
                     expectedLine.Location.CoordinateFrame = CoordType.XChartFractionYScale;
                     expectedLine.Line.Width = 1.5F;
                     expectedLine.Line.Style = DashStyle.Dot;
                     control.GraphPane.GraphObjList.Add(expectedLine);
 
-                    BoxObj boxObj = new BoxObj(0, totalSpacing * 1000 * 1.15, 1, totalSpacing * 1000 * 0.4, Color.Empty, Color.FromArgb(50, color));
+                    BoxObj boxObj = new BoxObj(0, expectedSpacing * maxTolerance, 1, expectedSpacing * minTolerance, Color.Empty, Color.FromArgb(50, color));
                     boxObj.Location.CoordinateFrame = CoordType.XChartFractionYScale;
                     boxObj.ZOrder = ZOrder.F_BehindGrid;
                     boxObj.IsClippedToChartRect = true;
                     control.GraphPane.GraphObjList.Add(boxObj);
                 }
 
-                index ++;
+                index++;
             }
 
             control.GraphPane.XAxis.Title.Text = "Retention Time (min)";
-            control.GraphPane.YAxis.Title.Text = "Peak Spacing (mDa)";
-           
+            control.GraphPane.YAxis.Title.Text = "Peak Spacing (" + (useMDa ? "mDa)" : "Da)");
+
+            biggestSpacing = Math.Max(biggestSpacing, totalSpacing*maxTolerance);
+
             control.GraphPane.YAxis.Scale.Min = -2;
-            control.GraphPane.YAxis.Scale.MaxAuto = true;
+            control.GraphPane.YAxis.Scale.Max = biggestSpacing;
             control.GraphPane.XAxis.Scale.Min = minRT;
             control.GraphPane.XAxis.Scale.Max = maxRT;
+
+
 
             // Hide the y=0 axis line
             control.GraphPane.YAxis.MajorGrid.IsZeroLine = false;
@@ -972,13 +986,12 @@ namespace NeuQuant
 
             try
             {
-                List<NeuQuantFeatureSet> featureSets = _currentProcessor.ExtractFeatureSets(peptide, 3).ToList();
+                List<NeuQuantFeatureSet> featureSets = _currentProcessor.ExtractFeatureSets(peptide).ToList();
 
                 NeuQuantFeatureSet featureSet = featureSets[0];
 
-                featureSet.FindPeaks(Tolerance.FromPPM(10), 3);
-                featureSet.FindElutionProfile(3);
-
+                _currentProcessor.FindPeaks(featureSet);
+               
                 PlotXIC(_xicForm.GraphControl, featureSet);
                 PlotSpacing(_spacingForm.GraphControl, featureSet);
             }
@@ -986,34 +999,9 @@ namespace NeuQuant
             {
                 LogMessage("ERROR! But safe to ignore");
                 LogMessage(e1.Message);
-                return;
             }
         }
-
-        private void CreatePD()
-        {
-            NeuQuantFile nqFile = null;
-            Task t = Task.Factory.StartNew(() =>
-            {
-                var psmFile = new ProteomeDiscovererPeptideSpectralMatchFile(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_080_11_MIPS.csv");
-                psmFile.SetDataDirectory(@"E:\Desktop\NeuQuant\Omssa PD");
-                psmFile.SetRawFile(new ThermoRawFile(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_080_11_MIPS.raw"));
-
-                Isotopologue twoPlex = Reagents.GetIsotopologue("NeuCode Duplex");
-
-                psmFile.AddFixedModification(twoPlex);
-                psmFile.AddFixedModification(new Modification("C2H3NO", "CAM", ModificationSites.C));
-                
-                psmFile.AddVariableModification("Oxidation", new Modification("O", "Oxidation", ModificationSites.M));
-                psmFile.AddVariableModification("Phospho", new Modification("H3PO3", "Phospho", ModificationSites.S | ModificationSites.T | ModificationSites.Y));
-
-                psmFile.SetChannel("Channel 1", "1", twoPlex[0]);
-                psmFile.SetChannel("Channel 2", "1", twoPlex[1]);
-
-                nqFile = NeuQuantFile.LoadData(@"E:\Desktop\NeuQuant\Omssa PD\Neu_LysC_K562_602_080_11_MIPS_PD.sqlite", psmFile);
-            }).ContinueWith((t2) => LoadNeuQuantFile(nqFile), TaskScheduler.FromCurrentSynchronizationContext());
-        }
-
+        
         private void LoadAnalyses(NeuQuantFile nqFile, TreeViewForm treeForm, bool clear = false)
         {
             if (nqFile == null)
@@ -1050,6 +1038,7 @@ namespace NeuQuant
             if (node.Tag is long)
             {
                 _currentAnalysisID = (long)node.Tag;
+                _currentProcessor = _currentNQFile.GetProcessor(_currentAnalysisID);
                 DisplayResults(_currentNQFile, _currentAnalysisID, _histrogramForm.GraphControl);
                 _histrogramForm.Show();
             }
@@ -1057,9 +1046,12 @@ namespace NeuQuant
 
         private void DisplayPeptides(NeuQuantFile nqFile, DGVForm form)
         {
+            // This is necessary if loading another file while one is loaded.
+            form.DataGridView.DataSource = null;
+
             form.DataGridView.Columns.Clear();
 
-            SortableBindingList<NeuQuantPeptide> peptides = new SortableBindingList<NeuQuantPeptide>(nqFile.GetPeptides());
+            SortableBindingList<NeuQuantPeptide> peptides = new SortableBindingList<NeuQuantPeptide>(nqFile.GetPeptides().Where(p => p.ContainsQuantitativeChannel));
             form.DataGridView.AutoGenerateColumns = false;
 
             DataGridViewTextBoxColumn sequenceColumn = new DataGridViewTextBoxColumn();
@@ -1072,7 +1064,6 @@ namespace NeuQuant
             psmColumn.HeaderText = "# PSMs";
             form.DataGridView.Columns.Add(psmColumn);
 
-
             DataGridViewTextBoxColumn channelsColumn = new DataGridViewTextBoxColumn();
             channelsColumn.DataPropertyName = "NumberOfChannels";
             channelsColumn.HeaderText = "# Quantitative Channels";
@@ -1080,8 +1071,8 @@ namespace NeuQuant
 
             form.DataGridView.DataSource = peptides;
             int count = peptides.Count;
-            form.AppendTitle("(" + count + ")");
-            LogMessage("Loaded " + count + " peptides.", true);
+            form.AppendTitle("(" +  count + ")");
+            LogMessage("Loaded " + count + " peptides.");
         }
         
         private void RegisterForm(Form form)
@@ -1162,16 +1153,6 @@ namespace NeuQuant
                 processor.Progress -= OnProgress;
                 processor.Message -= OnMessage;
             }).ContinueWith((t2) => LoadAnalyses(_currentNQFile, _analysesForm), TaskScheduler.FromCurrentSynchronizationContext());
-        }
-
-        private void goToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            AnalyzeFile();
-        }
-
-        private void createPDToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            CreatePD();
         }
         
         private void restoreModsToolStripMenuItem_Click(object sender, EventArgs e)

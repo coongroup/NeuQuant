@@ -153,6 +153,18 @@ namespace NeuQuant
             return _isotopes[peptide][isotope].Y;
         }
 
+        public IPeak GetChannelpeak(Peptide peptide, int isotope)
+        {
+            if (_isotopes == null || isotope >= ParentSet.NumberOfIsotopes)
+                return null;
+
+            IPeak[] peaks;
+            if (!_isotopes.TryGetValue(peptide, out peaks))
+                return null;
+            
+            return peaks[isotope];
+        }
+
         public void CheckIsotopicDistribution(int numberOfExpectedChannels, double percentError = 0.25, bool performCheck = true)
         {
             // If only one isotope, or skipping check, mark all isotopes as valid
@@ -272,7 +284,7 @@ namespace NeuQuant
         /// <param name="isotope">The isotope of consideration</param>
         /// <param name="maxPPM">The maximum ppm allowance for assigning a peak</param>
         /// <returns>The number of channels that were mapped to peaks</returns>
-        public int AssignPeaks(NeuQuantSpectrum spectrum, IList<Peptide> channels, double[] expectedSpacings, int isotope, Tolerance maxTolerance, Tolerance correctSpacingTolerance)
+        public int AssignPeaks(NeuQuantSpectrum spectrum, IList<Peptide> channels, double[] expectedSpacings, int isotope, Tolerance maxTolerance, Tolerance correctSpacingTolerance, double lowerPercent, double higherPercent)
         {
             // Cannot assign what does not exist
             if (spectrum == null || spectrum.Count == 0)
@@ -286,7 +298,7 @@ namespace NeuQuant
             }
             
             // Check peaks on spacing
-            int channelsAssigned = CheckPeakSpacing(spectrum, channels, expectedSpacings, isotope, maxTolerance, correctSpacingTolerance);
+            int channelsAssigned = CheckPeakSpacing(spectrum, channels, expectedSpacings, isotope, maxTolerance, correctSpacingTolerance, lowerPercent, higherPercent);
 
             // Mark that the spacing for this isotope is correct if all the channels were assigned
             if (channelsAssigned == channels.Count)

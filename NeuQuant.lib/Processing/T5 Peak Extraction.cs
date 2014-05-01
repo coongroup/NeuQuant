@@ -13,15 +13,19 @@ namespace NeuQuant.Processing
 
             foreach (NeuQuantFeatureSet featureSet in FeatureSets)
             {
-                featureSet.FindPeaks(MS2Tolerance, NumberOfIsotopesToQuantify, SystematicPPMError, UseIsotopicDistribution, IsotopicDistributionPercentError);
-                
-                featureSet.FindElutionProfile(3);
+                FindPeaks(featureSet);
                 
                 if (++count % 100 == 0)
                 {
                     OnProgress((double)count / FeatureSets.Count);
                 }
             }
+        }
+
+        public void FindPeaks(NeuQuantFeatureSet featureSet)
+        {
+            featureSet.FindPeaks(MS2Tolerance, NumberOfIsotopesToQuantify, SystematicPPMError, UseIsotopicDistribution, IsotopicDistributionPercentError, LowerSpacingPercent, UpperSpacingPercent);
+            featureSet.FindElutionProfile(3);
         }
         
     }

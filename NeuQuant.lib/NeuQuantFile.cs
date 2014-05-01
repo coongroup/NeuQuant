@@ -69,7 +69,7 @@ namespace NeuQuant.IO
             _selectPeptide = new SQLiteCommand(@"SELECT id FROM peptides WHERE sequence = @sequence AND monoMass = @monoMass", _dbConnection);
             _selectModification = new SQLiteCommand(@"SELECT id FROM modifications WHERE name = @name", _dbConnection);
             _insertAnalysis = new SQLiteCommand(@"INSERT INTO analyses (createDate, name) VALUES (DateTime('now'), @name)", _dbConnection);
-            _insertAnalysisParameter = new SQLiteCommand(@"INSERT INTO analysisParameters (analysisID, key, value, valueType) VALUES (@analysisID, @key, @value, @valueType)", _dbConnection);
+            _insertAnalysisParameter = new SQLiteCommand(@"INSERT INTO analysisParameters (analysisID, key, value) VALUES (@analysisID, @key, @value)", _dbConnection);
             
             _insertQuantitation = new SQLiteCommand(@"INSERT INTO quantitation (analysisID, peptideID, sampleID, quantitation) VALUES (@analysisID, @peptideID, @sampleID, @quantitation)", _dbConnection);
         }
@@ -558,12 +558,11 @@ namespace NeuQuant.IO
             }
         }
 
-        public void SaveAnalysisParameter(long id, string key, object value)
+        public void SaveAnalysisParameter(long id, string key, string value)
         {
             _insertAnalysisParameter.Parameters.AddWithValue("@analysisID", id);
             _insertAnalysisParameter.Parameters.AddWithValue("@key", key);
             _insertAnalysisParameter.Parameters.AddWithValue("@value", value);
-            _insertAnalysisParameter.Parameters.AddWithValue("@valueType", value.GetType());
             _insertAnalysisParameter.ExecuteNonQuery();
         }
 
@@ -709,13 +708,13 @@ namespace NeuQuant.IO
         {
             Processor processor = new Processor(this);
 
-            const string baseSql = @"SELECT name, createDate, a.id as ID, key, value, valueType
+            const string baseSql = @"SELECT name, createDate, a.id as ID, key, value
                                     FROM analyses a
                                     JOIN analysisParameters ap
                                     ON ap.analysisID = a.id";
 
             var selectProcessor = new SQLiteCommand(string.Join(" ", baseSql, whereSql), _dbConnection);
-
+            
             using (var reader = selectProcessor.ExecuteReader())
             {
                 bool first = true;
@@ -731,13 +730,9 @@ namespace NeuQuant.IO
                     }
 
                     string key = (string) reader["key"];
-                    object value = reader["value"];
-                    string valueType = (string) reader["valueType"];
+                    string value = (string) reader["value"];
 
-                    //var item = Convert.ChangeType(value, Type.GetType(valueType));
-
-                    //processor.GetType().GetProperty(key).SetValue(processor, item, null);
-
+                    processor.SetValue(key, value);
                 }
             }
 
