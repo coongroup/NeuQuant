@@ -11,7 +11,7 @@ namespace NeuQuant.Processing
 {
     public partial class Processor : IDisposable
     {
-        protected NeuQuantFile NqFile;
+        public NeuQuantFile NqFile;
         public int NumberOfIsotopesToQuantify { get; set; }
         public double MinimumRtDelta { get; set; }
         public double MaximumRtDelta { get; set; }

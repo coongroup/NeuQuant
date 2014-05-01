@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CSMSL.IO;
 using CSMSL.IO.Thermo;
 using NeuQuant.Processing;
 using WeifenLuo.WinFormsUI.Docking;
@@ -49,6 +51,7 @@ namespace NeuQuant
         private NeuQuantFileGeneratorForm _nqFileGeneratorForm;
         private QuantiativeLabelManagerForm _labelManagerForm;
         private TreeViewForm _analysesForm;
+        private ProcessorForm _processorForm;
 
         #endregion
 
@@ -56,6 +59,7 @@ namespace NeuQuant
 
         private NeuQuantFile _currentNQFile = null;
         private Processor _currentProcessor = null;
+        private long _currentAnalysisID = -1;
 
         #endregion
 
@@ -115,6 +119,17 @@ namespace NeuQuant
             RegisterForm(_msSpectrumForm);
             _msSpectrumForm.Hide();
 
+            _spacingForm = new GraphForm();
+            _spacingForm.Text = "Peak Spacing";
+            _spacingForm.GraphControl.MouseMove += MoveVerticalLine;
+            _spacingForm.GraphControl.MouseClick += ToggleCurveVisibility;
+            _spacingForm.GraphControl.MouseClick += RetentionTimePlotClick;
+            _spacingForm.GraphControl.PreviewKeyDown += GraphControl_PreviewKeyDown;
+            _spacingForm.Show(dockPanel1, DockState.Document);
+            RefreshGraph(_spacingForm.GraphControl);
+            RegisterForm(_spacingForm);
+            _spacingForm.Hide();
+
             _xicForm = new GraphForm();
             _xicForm.Text = "eXtracted Ion Chromatograms";
             _xicForm.Show(dockPanel1, DockState.Document);
@@ -141,16 +156,7 @@ namespace NeuQuant
             RegisterForm(_xicForm);
             _xicForm.Hide();
 
-            _spacingForm = new GraphForm();
-            _spacingForm.Text = "Peak Spacing";
-            _spacingForm.GraphControl.MouseMove += MoveVerticalLine;
-            _spacingForm.GraphControl.MouseClick += ToggleCurveVisibility;
-            _spacingForm.GraphControl.MouseClick += RetentionTimePlotClick;
-            _spacingForm.GraphControl.PreviewKeyDown += GraphControl_PreviewKeyDown;
-            _spacingForm.Show(dockPanel1, DockState.Document);
-            RefreshGraph(_spacingForm.GraphControl);
-            RegisterForm(_spacingForm);
-            _spacingForm.Hide();
+
 
             _histrogramForm = new GraphForm();
             _histrogramForm.Text = "Histrogram";
@@ -169,17 +175,23 @@ namespace NeuQuant
             _labelManagerForm.DockPanel = dockPanel1;
             RegisterForm(_labelManagerForm);
             
-            _peptidesForm = new DGVForm("Peptides");
-            _peptidesForm.Show(dockPanel1, DockState.DockRight);
-            _peptidesForm.DataGridView.RowEnter += PeptideRowEnter;
-            RegisterForm(_peptidesForm);
-            _peptidesForm.Hide();
-
             _analysesForm = new TreeViewForm("Analyses");
             _analysesForm.Show(dockPanel1, DockState.DockRight);
             _analysesForm.TreeView.NodeMouseClick += TreeView_NodeMouseClick;
             RegisterForm(_analysesForm);
             _analysesForm.Hide();
+          
+            _processorForm = new ProcessorForm();
+            _processorForm.Show(dockPanel1, DockState.DockRight);
+            _processorForm.Analyze += _processorForm_Analyze;
+            RegisterForm(_processorForm);
+            _processorForm.Hide();
+
+            _peptidesForm = new DGVForm("Peptides");
+            _peptidesForm.Show(dockPanel1, DockState.DockRight);
+            _peptidesForm.DataGridView.RowEnter += PeptideRowEnter;
+            RegisterForm(_peptidesForm);
+            _peptidesForm.Hide();
 
             // Link this two forms together so their events are reflected in both
             _spacingForm.LinkForms(_xicForm);
@@ -188,6 +200,23 @@ namespace NeuQuant
             
 
             base.OnLoad(e);
+        }
+
+        private void _processorForm_Analyze(object sender, EventArgs e)
+        {
+            ProcessorForm processorForm = sender as ProcessorForm;
+            if (processorForm == null)
+                return;
+
+            if (_currentNQFile == null)
+            {
+                LogMessage("No Data is loaded to analyze!");
+                return;
+            }
+
+            _currentProcessor = processorForm.GetProcessor(_currentNQFile);
+
+            AnalyzeFile();
         }
 
         #endregion
@@ -206,6 +235,7 @@ namespace NeuQuant
 
             Task t = Task.Factory.StartNew(() =>
             {
+                _currentProcessor = null;
                 SetStatusText("Loading File...");
                 LogMessage("Attempting to load NeuQuant File " + file.FilePath);
 
@@ -222,12 +252,13 @@ namespace NeuQuant
 
                     //TODO add stuff to save and close the old file
                 }
+               
 
                 _currentNQFile = file;              
                 _currentNQFile.Open();
 
                 Processor processor = null; //_currentNQFile.TryGetLastProcessor(out processor) ? processor : 
-                _currentProcessor = new Processor(_currentNQFile, "Analysis 2", 3, 0.75, 0.75, -10, checkIsotopicDistribution: true, noiseBandCap: false);
+                _currentProcessor = new Processor(_currentNQFile, "Analysis 1", 3, 0.75, 0.75, -10, checkIsotopicDistribution: true, noiseBandCap: false);
                 
                 LogMessage("Loaded NeuQuant File " + _currentNQFile.FilePath);
                
@@ -240,9 +271,11 @@ namespace NeuQuant
                 DisplayPeptides(_currentNQFile, _peptidesForm);
                 _peptidesForm.Show();
                 _analysesForm.Show();
-                _xicForm.Show();
+                _processorForm.Show();
                 _msSpectrumForm.Show();
                 _spacingForm.Show();
+                _xicForm.Show();
+                _peptidesForm.Show();
                 SetStatusText("Ready");
             }, TaskScheduler.FromCurrentSynchronizationContext());
         }
@@ -374,6 +407,14 @@ namespace NeuQuant
                     double mean = log2ratios.Average();
                     double median = log2ratios.Median();
                     double stdev = log2ratios.StdDev();
+
+                    if (stdev == 0)
+                    {
+                        // Something is wrong,, break out
+                        LogMessage("Error getting results!");
+                        SetStatusText("Error");
+                        return;
+                    }
 
                     PointPairList points = new PointPairList();
                     int numberOfBins = 100;
@@ -649,10 +690,15 @@ namespace NeuQuant
             var isotopologues = feature.Peptide.QuantifiableChannels.Values;
             List<Color> colors = new List<Color>();
             colors.Add(Color.Black);
-            colors.AddRange(MasterColors);
+            int colorI = 0;
+            foreach (var iso in isotopologues)
+            {
+                colors.Add(MasterColors[colorI++]);
+            }
+          
             item.Line.GradientFill = new Fill(colors.ToArray());
             item.Line.GradientFill.Type = FillType.GradientByZ;
-            item.Line.GradientFill.RangeMax = isotopologues.Count;
+            item.Line.GradientFill.RangeMax = colors.Count - 1;
             item.Line.Width = 2F;
             int c = 0;
            
@@ -921,15 +967,27 @@ namespace NeuQuant
                 return;
             }
 
-            List<NeuQuantFeatureSet> featureSets = _currentProcessor.ExtractFeatureSets(peptide, 3).ToList();
+            if (_currentProcessor == null)
+                return;
 
-            NeuQuantFeatureSet featureSet = featureSets[0];
+            try
+            {
+                List<NeuQuantFeatureSet> featureSets = _currentProcessor.ExtractFeatureSets(peptide, 3).ToList();
 
-            featureSet.FindPeaks(Tolerance.FromPPM(10), 3);
-            featureSet.FindElutionProfile(3);
+                NeuQuantFeatureSet featureSet = featureSets[0];
 
-            PlotXIC(_xicForm.GraphControl, featureSet);
-            PlotSpacing(_spacingForm.GraphControl, featureSet);
+                featureSet.FindPeaks(Tolerance.FromPPM(10), 3);
+                featureSet.FindElutionProfile(3);
+
+                PlotXIC(_xicForm.GraphControl, featureSet);
+                PlotSpacing(_spacingForm.GraphControl, featureSet);
+            }
+            catch (Exception e1)
+            {
+                LogMessage("ERROR! But safe to ignore");
+                LogMessage(e1.Message);
+                return;
+            }
         }
 
         private void CreatePD()
@@ -981,7 +1039,7 @@ namespace NeuQuant
                 }
             }
         }
-
+        
         private void TreeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
         {
             TreeView tree = sender as TreeView;
@@ -991,8 +1049,8 @@ namespace NeuQuant
             TreeNode node = e.Node;
             if (node.Tag is long)
             {
-                long analysisID = (long) node.Tag;
-                DisplayResults(_currentNQFile, analysisID, _histrogramForm.GraphControl);
+                _currentAnalysisID = (long)node.Tag;
+                DisplayResults(_currentNQFile, _currentAnalysisID, _histrogramForm.GraphControl);
                 _histrogramForm.Show();
             }
         }
@@ -1124,6 +1182,109 @@ namespace NeuQuant
         public void ShowLabelManager()
         {
             _labelManagerForm.Show();
+        }
+
+        private void loadFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                LoadNeuQuantFile(openFileDialog1.FileName);
+            }
+        }
+
+
+
+        private void peptideQuantitationToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_currentAnalysisID < 0 || _currentProcessor == null)
+                return;
+
+            if (saveFileDialog1.ShowDialog() != DialogResult.OK)
+                return;
+
+            string filePath = saveFileDialog1.FileName;
+
+            LogMessage("Exporting data to " + filePath);
+
+            using (StreamWriter writer = new StreamWriter(filePath))
+            {
+                List<NeuQuantSample> samples = _currentProcessor.NqFile.GetSamples().ToList();
+                writer.Write("Peptide");
+                foreach (var sample in samples)
+                {
+                    writer.Write(',');
+                    writer.Write(sample.Name);
+                }
+                writer.WriteLine();
+
+                var quants = _currentProcessor.NqFile.GetQuantitation(_currentAnalysisID).ToList();
+
+                foreach (var quant in quants)
+                {
+                    string sequence = quant.Item1;
+                    Dictionary<NeuQuantSample, double> data = quant.Item2;
+                    writer.Write(sequence);
+                    foreach (var sample in samples)
+                    {
+                        writer.Write(',');
+                        double value = 0;
+                        data.TryGetValue(sample, out value);
+                        writer.Write(value);
+                    }
+                    writer.WriteLine();
+                }
+                
+                //for (int i = 0; i < samples.Count - 1; i++)
+                //{
+                //    NeuQuantSample sample1 = samples[i];
+                //    for (int j = i + 1; j < samples.Count; j++)
+                //    {
+                //        NeuQuantSample sample2 = samples[j];
+                        
+                //        List<double> log2ratios = new List<double>();
+                //        foreach (var quant in quants)
+                //        {
+                //            double quant1 = quant.Item2[sample1];
+                //            double quant2 = quant.Item2[sample2];
+
+                //            double ratio = quant1/quant2;
+                //            double log2ratio = Math.Log(ratio, 2);
+
+                //            // Prevent oddities
+                //            if (double.IsNaN(log2ratio) || double.IsInfinity(log2ratio))
+                //                continue;
+
+                //            log2ratios.Add(log2ratio);
+                //        }
+
+                //        int count = log2ratios.Count;
+                //        if (count == 0)
+                //            return;
+
+                //        double mean = log2ratios.Average();
+                //        double median = log2ratios.Median();
+                //        double stdev = log2ratios.StdDev();
+
+                //        PointPairList points = new PointPairList();
+                //        int numberOfBins = 100;
+                //        double min, max, stepSize;
+                //        int[] bins = log2ratios.Histogram(numberOfBins, out min, out max, out stepSize);
+                //        for (int k = 0; k < numberOfBins; k++)
+                //        {
+                //            points.Add(min + k*stepSize, bins[k]);
+                //        }
+
+                //        LineItem line = control.GraphPane.AddCurve(string.Format("({0}/{1}) N={2} u={3:f3} m={4:f3} stdev={5:f3}", sample1.Name, sample2, count, Math.Pow(2, mean), Math.Pow(2, median), stdev), points, color, SymbolType.None);
+                //        line.Line.Width = 2.5f;
+                //    }
+                //}
+
+            }
+        }
+
+        private void File_DropDownOpening(object sender, EventArgs e)
+        {
+            exportDataToolStripMenuItem.Enabled = (_currentAnalysisID >= 0);
         }
    
     }

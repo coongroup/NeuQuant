@@ -92,7 +92,8 @@ namespace NeuQuant.IO
         public long SelectFile(string filePath)
         {
             _selectFile.Parameters.AddWithValue("@filePath", filePath);
-            return (long) _selectFile.ExecuteScalar();
+            object o = _selectFile.ExecuteScalar();
+            return (long)o;
         }
 
         public long InsertFile(string filePath, string description = "")
