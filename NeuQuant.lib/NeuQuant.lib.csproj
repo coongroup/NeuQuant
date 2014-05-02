@@ -85,13 +85,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ChemicalFormulaModification.cs" />
+    <Compile Include="NeuQuantModification.cs" />
     <Compile Include="MessageEventArgs.cs" />
     <Compile Include="NeuQuantAnalysis.cs" />
     <Compile Include="NeuQuantFeature.cs" />
     <Compile Include="NeuQuantFeatureSet.cs" />
     <Compile Include="NeuQuantFile.cs" />
     <Compile Include="NeuQuantFileGenerator.cs" />
+    <Compile Include="NeuQuantIsotopologue.cs" />
     <Compile Include="NeuQuantPeptide.cs" />
     <Compile Include="NeuQuantQuantitation.cs" />
     <Compile Include="NeuQuantQuantitationSet.cs" />

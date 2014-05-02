@@ -16,8 +16,8 @@ namespace NeuQuant
         public virtual string Type { get { return "PSM File"; } } 
                  
         public Dictionary<ThermoRawFile, HashSet<int>> UsedRawFiles;
-        public HashSet<Modification> FixedModifications;
-        public Dictionary<string, Modification> VariableModifications;
+        public HashSet<CSMSL.Proteomics.Modification> FixedModifications;
+        public Dictionary<string, CSMSL.Proteomics.Modification> VariableModifications;
         public Dictionary<string, NeuQuantSample> Samples;
 
         public int PSMCount { get; protected set; }
@@ -30,8 +30,8 @@ namespace NeuQuant
         {
             FilePath = filePath;           
             UsedRawFiles = new Dictionary<ThermoRawFile, HashSet<int>>();
-            FixedModifications = new HashSet<Modification>();
-            VariableModifications = new Dictionary<string, Modification>();
+            FixedModifications = new HashSet<CSMSL.Proteomics.Modification>();
+            VariableModifications = new Dictionary<string, CSMSL.Proteomics.Modification>();
             Samples = new Dictionary<string, NeuQuantSample>();
             ScoreType = scoreType;
             StoreMS2Spectra = storeMS2Spectra;
@@ -42,12 +42,12 @@ namespace NeuQuant
             DataDirectory = directory;
         }
 
-        public virtual void AddFixedModification(Modification modification)
+        public virtual void AddFixedModification(CSMSL.Proteomics.Modification modification)
         {
             FixedModifications.Add(modification);
         }
 
-        public virtual void AddVariableModification(string key, Modification modification)
+        public virtual void AddVariableModification(string key, CSMSL.Proteomics.Modification modification)
         {
             if (!VariableModifications.ContainsKey(key))
             {
@@ -55,7 +55,7 @@ namespace NeuQuant
             }           
         }
 
-        public void SetChannel(string sampleName, string description, params Modification[] modifications)
+        public void SetChannel(string sampleName, string description, params CSMSL.Proteomics.Modification[] modifications)
         {
             if (Samples.ContainsKey(sampleName))
             {
@@ -63,7 +63,7 @@ namespace NeuQuant
             }
 
             NeuQuantSample sample = new NeuQuantSample(sampleName, description);
-            foreach (Modification modification in modifications)
+            foreach (CSMSL.Proteomics.Modification modification in modifications)
             {
                 // TODO add check to make sure the modification was previously added to the fixed/variable mods, will be challenging with isotopologues
 
@@ -72,7 +72,7 @@ namespace NeuQuant
             Samples.Add(sample.Name, sample);
         }
 
-        public void SetChannel(string sampleName, string description, Modification modification)
+        public void SetChannel(string sampleName, string description, CSMSL.Proteomics.Modification modification)
         {
             SetChannel(sampleName, description, new[] {modification});
         }

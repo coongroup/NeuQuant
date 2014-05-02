@@ -13,11 +13,11 @@ namespace NeuQuant
 {
     public partial class NeuQuantFileGeneratorForm : Form
     {
-        private NeuQuantForm ParentForm;
+        private NeuQuantForm neuQuantForm;
 
-        public NeuQuantFileGeneratorForm(NeuQuantForm parent)
+        public NeuQuantFileGeneratorForm(NeuQuantForm neuQuant)
         {
-            ParentForm = parent;
+            neuQuantForm = neuQuant;
             InitializeComponent();
             PsmFileImporter importer = new PsmFileImporter();
             importer.removeButton.Visible = false;
@@ -58,6 +58,7 @@ namespace NeuQuant
 
             listBox1.DataSource = NeuQuantForm.CurrentIsotopologues;
             checkedListBox1.DataSource = NeuQuantForm.CurrentModifications;
+            checkedListBox1.DisplayMember = "NameAndSites";
         }
 
         private void importer_Changed(object sender, EventArgs e)
@@ -116,14 +117,14 @@ namespace NeuQuant
             // Add the quantitative label isotopologue
             psmFile.AddFixedModification(isotopologue);
 
-            foreach (var modification in checkedListBox1.CheckedItems.OfType<ChemicalFormulaModification>())
+            foreach (var modification in checkedListBox1.CheckedItems.OfType<NeuQuantModification>())
             {
                 psmFile.AddFixedModification(modification);
             }
             
             foreach (DataGridViewRow row in dataGridView1.Rows)
             {
-                var mod = row.Tag as Modification;
+                var mod = row.Tag as CSMSL.Proteomics.Modification;
                 string name = row.Cells["name"].Value.ToString();
                 string description = row.Cells["Description"].Value.ToString();
                 psmFile.SetChannel(name, description, mod);
@@ -133,8 +134,8 @@ namespace NeuQuant
             Task t = Task.Factory.StartNew(() =>
             {
                 nqFile = NeuQuantFile.LoadData(outputFile, psmFile);
-            }).ContinueWith((t2) => ParentForm.LoadNeuQuantFile(nqFile), TaskScheduler.FromCurrentSynchronizationContext());
-            ParentForm.SetStatusText("Generating File... (may take a few moments)");
+            }).ContinueWith((t2) => neuQuantForm.LoadNeuQuantFile(nqFile), TaskScheduler.FromCurrentSynchronizationContext());
+            neuQuantForm.SetStatusText("Generating File... (may take a few moments)");
             Close();
         }
 
@@ -163,7 +164,7 @@ namespace NeuQuant
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            ParentForm.ShowLabelManager();
+            neuQuantForm.ShowLabelManager();
         }
         
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)

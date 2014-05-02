@@ -13,21 +13,21 @@ namespace NeuQuant
     /// </summary>
     public static class Reagents
     {
-        private static readonly Dictionary<string, ChemicalFormulaModification> Modifications;
+        private static readonly Dictionary<string, NeuQuantModification> Modifications;
         private static readonly Dictionary<string, Isotopologue> Isotopologues;
         
         private static readonly string DeafaultModificationPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"NeuQuant\Modifications.xml");
 
         static Reagents()
         {
-            Modifications = new Dictionary<string, ChemicalFormulaModification>();
+            Modifications = new Dictionary<string, NeuQuantModification>();
             Isotopologues = new Dictionary<string, Isotopologue>();
           
             // Load the default modification file
             Load();
         }
 
-        public static IEnumerable<ChemicalFormulaModification> GetAllModifications()
+        public static IEnumerable<NeuQuantModification> GetAllModifications()
         {
             return Modifications.Values;
         }
@@ -37,17 +37,17 @@ namespace NeuQuant
             return Isotopologues.Values;
         }
 
-        public static ChemicalFormulaModification GetModification(string name)
+        public static NeuQuantModification GetModification(string name)
         {
-            ChemicalFormulaModification mod = null;
+            NeuQuantModification mod = null;
             Modifications.TryGetValue(name, out mod);
             return mod;
         }
 
-        public static void AddModification(ChemicalFormulaModification modification)
+        public static void AddModification(NeuQuantModification neuQuantModification)
         {
             // Add Modification
-            Modifications[modification.Name] = modification;
+            Modifications[neuQuantModification.Name] = neuQuantModification;
             
             // Alert others
             OnModificationsChanged();
@@ -128,7 +128,7 @@ namespace NeuQuant
                         sites |= site;
                     }
 
-                    var chemFormMod = new ChemicalFormulaModification(chemicalFormula, name, sites, isAminoAcid, isDefault);
+                    var chemFormMod = new NeuQuantModification(chemicalFormula, name, sites, isAminoAcid, isDefault);
                     Modifications.Add(name, chemFormMod);
                 }
                 OnModificationsChanged(false);
@@ -156,7 +156,7 @@ namespace NeuQuant
                 }
                 OnIsotopologuesChanged(false);
             }
-            catch (XmlException e)
+            catch (XmlException)
             {
                 RestoreDefaults();
             }
@@ -183,7 +183,7 @@ namespace NeuQuant
                 writer.WriteStartDocument();
                 writer.WriteStartElement("NeuQuantModifications");
                 writer.WriteStartElement("Modifications");
-                foreach (ChemicalFormulaModification mod in Modifications.Values)
+                foreach (NeuQuantModification mod in Modifications.Values)
                 {
                     writer.WriteStartElement("Modification");
                     writer.WriteAttributeString("name", mod.Name);
@@ -206,7 +206,7 @@ namespace NeuQuant
                     {
                         writer.WriteElementString("ModificationSite", site.ToString());
                     }
-                    foreach (Modification mod in isotopologue.GetModifications())
+                    foreach (CSMSL.Proteomics.Modification mod in isotopologue)
                     {
                         writer.WriteElementString("ModificationID", mod.Name);
                     }

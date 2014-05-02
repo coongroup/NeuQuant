@@ -42,7 +42,13 @@ namespace NeuQuant.IO
             }
         }
 
-        public static event EventHandler OnFinished;
+        public static event EventHandler Finished;
+
+        private static void OnFinished()
+        {
+            EventHandler handler = Finished;
+            if (handler != null) handler(null, EventArgs.Empty);
+        }
 
         #endregion
                

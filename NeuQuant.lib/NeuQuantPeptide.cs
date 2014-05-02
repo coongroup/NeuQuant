@@ -66,7 +66,7 @@ namespace NeuQuant
         /// <summary>
         /// The Amino Acid Sequence of this Peptide
         /// </summary>
-        public string Sequence { get { return Peptide.Sequence; } }
+        public string Sequence { get { return (Peptide == null) ? "" : Peptide.Sequence; } }
 
         /// <summary>
         /// Indicates if this Peptide contains a quantitative channel

@@ -34,8 +34,10 @@ namespace NeuQuant
 
         public static Color[] MasterColors = {Color.CornflowerBlue, Color.Sienna, Color.YellowGreen};
 
-        public static readonly BindingList<ChemicalFormulaModification> CurrentModifications = new BindingList<ChemicalFormulaModification>();
+        public static readonly BindingList<NeuQuantModification> CurrentModifications = new BindingList<NeuQuantModification>();
         public static readonly BindingList<Isotopologue> CurrentIsotopologues = new BindingList<Isotopologue>();
+        
+        public SortableBindingList<NeuQuantPeptide> LoadedPeptides = new SortableBindingList<NeuQuantPeptide>();
 
         #endregion
 
@@ -46,7 +48,7 @@ namespace NeuQuant
         private GraphForm _xicForm;
         private GraphForm _spacingForm;
         private GraphForm _histrogramForm;
-        private DGVForm _psmsForm;
+        //private DGVForm _psmsForm;
         private DGVForm _peptidesForm;
         private NeuQuantFileGeneratorForm _nqFileGeneratorForm;
         private QuantiativeLabelManagerForm _labelManagerForm;
@@ -80,16 +82,22 @@ namespace NeuQuant
 
         private void RefreshIsotopologues()
         {
+            CurrentIsotopologues.RaiseListChangedEvents = false;
             CurrentIsotopologues.Clear();
             foreach (var iso in Reagents.GetAllIsotopologue())
                 CurrentIsotopologues.Add(iso);
+            CurrentIsotopologues.RaiseListChangedEvents = true;
+            CurrentIsotopologues.ResetBindings();
         }
 
         private void RefreshModifications()
         {
+            CurrentModifications.RaiseListChangedEvents = false;
             CurrentModifications.Clear();
             foreach (var mod in Reagents.GetAllModifications())
                 CurrentModifications.Add(mod);
+            CurrentModifications.RaiseListChangedEvents = true;
+            CurrentModifications.ResetBindings();
         }
         
         protected override void OnLoad(EventArgs e)
@@ -157,8 +165,6 @@ namespace NeuQuant
             RegisterForm(_xicForm);
             _xicForm.Hide();
 
-
-
             _histrogramForm = new GraphForm();
             _histrogramForm.Text = "Histrogram";
             _histrogramForm.GraphControl.MouseMove += MoveVerticalLine;
@@ -192,6 +198,29 @@ namespace NeuQuant
             _peptidesForm.Show(dockPanel1, DockState.DockRight);
             _peptidesForm.DataGridView.RowEnter += PeptideRowEnter;
             _peptidesForm.DataGridView.AlternatingRowsDefaultCellStyle.BackColor = Color.LightBlue;
+            
+            _peptidesForm.DataGridView.AutoGenerateColumns = false;
+            _peptidesForm.DataGridView.AllowUserToAddRows = false;
+            _peptidesForm.DataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            _peptidesForm.DataGridView.DataBindingComplete += DataGridView_DataBindingComplete;
+            
+            DataGridViewTextBoxColumn sequenceColumn = new DataGridViewTextBoxColumn();
+            sequenceColumn.DataPropertyName = "Sequence";
+            sequenceColumn.HeaderText = "Sequence";
+            _peptidesForm.DataGridView.Columns.Add(sequenceColumn);
+
+            DataGridViewTextBoxColumn psmColumn = new DataGridViewTextBoxColumn();
+            psmColumn.DataPropertyName = "NumberOfPeptideSpectrumMatches";
+            psmColumn.HeaderText = "# PSMs";
+            _peptidesForm.DataGridView.Columns.Add(psmColumn);
+
+            DataGridViewTextBoxColumn channelsColumn = new DataGridViewTextBoxColumn();
+            channelsColumn.DataPropertyName = "NumberOfChannels";
+            channelsColumn.HeaderText = "# Quantitative Channels";
+            _peptidesForm.DataGridView.Columns.Add(channelsColumn);
+            
+            _peptidesForm.DataGridView.DataSource = LoadedPeptides;
+ 
             RegisterForm(_peptidesForm);
             _peptidesForm.Hide();
 
@@ -203,6 +232,22 @@ namespace NeuQuant
 
             base.OnLoad(e);
         }
+
+        void DataGridView_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+        {
+            var dgv = sender as DataGridView;
+            if (dgv == null)
+                return;
+
+            var dgvForm = dgv.Parent as DGVForm;
+            if (dgvForm == null)
+                return;
+
+            int rows = dgv.Rows.Count;
+
+            dgvForm.AppendTitle("(n=" + rows + ")");
+        }
+        
 
         private void _processorForm_Analyze(object sender, EventArgs e)
         {
@@ -251,7 +296,7 @@ namespace NeuQuant
                     ClearGraph(_spacingForm.GraphControl);
                     ClearGraph(_histrogramForm.GraphControl);
                     ClearGraph(_msSpectrumForm.GraphControl);
-
+                  
                     //TODO add stuff to save and close the old file
                 }
                
@@ -260,7 +305,6 @@ namespace NeuQuant
                 _currentNQFile.Open();
 
                 // TODO figure out loading default processor.
-                Processor processor = null; //_currentNQFile.TryGetLastProcessor(out processor) ? processor : 
                 _currentProcessor = new Processor(_currentNQFile, "Analysis 1", 3, 0.75, 0.75, -10, checkIsotopicDistribution: true, noiseBandCap: false);
                 _currentProcessor.Open();
 
@@ -270,9 +314,10 @@ namespace NeuQuant
             {
                 if (_currentNQFile == null)
                     return;
+               
                 Text = ProgramVersion + " - " + _currentNQFile.FilePath;
                 LoadAnalyses(_currentNQFile, _analysesForm, true);
-                DisplayPeptides(_currentNQFile, _peptidesForm);
+                LoadPeptides(_currentNQFile);
                 _peptidesForm.Show();
                 _analysesForm.Show();
                 _processorForm.Show();
@@ -536,10 +581,11 @@ namespace NeuQuant
             control.GraphPane.XAxis.Title.Text = "Retention Time (min)";
             control.GraphPane.YAxis.Title.Text = "Peak Spacing (" + (useMDa ? "mDa)" : "Da)");
 
-            biggestSpacing = Math.Max(biggestSpacing, totalSpacing*maxTolerance);
+            biggestSpacing = Math.Max(biggestSpacing, totalSpacing * factor * maxTolerance);
 
             control.GraphPane.YAxis.Scale.Min = -2;
-            control.GraphPane.YAxis.Scale.Max = biggestSpacing;
+            control.GraphPane.YAxis.Scale.Max = biggestSpacing * 1.1;
+            
             control.GraphPane.XAxis.Scale.Min = minRT;
             control.GraphPane.XAxis.Scale.Max = maxRT;
 
@@ -719,7 +765,7 @@ namespace NeuQuant
             foreach (var isotopologue in isotopologues)
             {
                 c++;
-                string message = string.Join(",", isotopologue.GetUniqueModifications<Modification>());
+                string message = string.Join(",", isotopologue.GetUniqueModifications<CSMSL.Proteomics.Modification>());
                 for (int i = 0; i < 3; i++)
                 {
                     double mz = isotopologue.ToMz(psm.Charge, i);
@@ -1044,35 +1090,16 @@ namespace NeuQuant
             }
         }
 
-        private void DisplayPeptides(NeuQuantFile nqFile, DGVForm form)
+        private void LoadPeptides(NeuQuantFile nqFile)
         {
-            // This is necessary if loading another file while one is loaded.
-            form.DataGridView.DataSource = null;
-
-            form.DataGridView.Columns.Clear();
-
-            SortableBindingList<NeuQuantPeptide> peptides = new SortableBindingList<NeuQuantPeptide>(nqFile.GetPeptides().Where(p => p.ContainsQuantitativeChannel));
-            form.DataGridView.AutoGenerateColumns = false;
-
-            DataGridViewTextBoxColumn sequenceColumn = new DataGridViewTextBoxColumn();
-            sequenceColumn.DataPropertyName = "Sequence";
-            sequenceColumn.HeaderText = "Sequence";
-            form.DataGridView.Columns.Add(sequenceColumn);
-
-            DataGridViewTextBoxColumn psmColumn = new DataGridViewTextBoxColumn();
-            psmColumn.DataPropertyName = "NumberOfPeptideSpectrumMatches";
-            psmColumn.HeaderText = "# PSMs";
-            form.DataGridView.Columns.Add(psmColumn);
-
-            DataGridViewTextBoxColumn channelsColumn = new DataGridViewTextBoxColumn();
-            channelsColumn.DataPropertyName = "NumberOfChannels";
-            channelsColumn.HeaderText = "# Quantitative Channels";
-            form.DataGridView.Columns.Add(channelsColumn);
-
-            form.DataGridView.DataSource = peptides;
-            int count = peptides.Count;
-            form.AppendTitle("(" +  count + ")");
-            LogMessage("Loaded " + count + " peptides.");
+            LoadedPeptides.Clear();
+            LoadedPeptides.RaiseListChangedEvents = false;
+            foreach (var peptide in nqFile.GetPeptides().Where(p => p.ContainsQuantitativeChannel))
+            {
+                LoadedPeptides.Add(peptide);
+            }
+            LoadedPeptides.RaiseListChangedEvents = true;
+            LoadedPeptides.ResetBindings();
         }
         
         private void RegisterForm(Form form)

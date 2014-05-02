@@ -61,7 +61,7 @@ namespace NeuQuant
                     peptide.SetModifications(mods); // Important to set variable mods first, as they will get overwritten by the fixed mods
                     peptide.SetModifications(FixedModifications);
                        
-                    var allMods = peptide.GetUniqueModifications<Modification>();
+                    var allMods = peptide.GetUniqueModifications<CSMSL.Proteomics.Modification>();
                     allMods.ExceptWith(FixedModifications);
                     foreach (var mod in allMods)
                     {

@@ -73,7 +73,7 @@ namespace NeuQuant
             return nqSpectrum;
         }
 
-        public new NeuQuantSpectrum Extract(IRange<double> range, double systematicPPMError = 0.0)
+        public NeuQuantSpectrum Extract(IRange<double> range, double systematicPPMError = 0.0)
         {
             var spectrum = base.Extract(range);
             if (spectrum == null)

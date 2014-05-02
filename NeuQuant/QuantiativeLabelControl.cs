@@ -14,14 +14,14 @@ namespace NeuQuant
 
         public string ChannelName { get { return NameTextBox.Text; } }
 
-        public Modification Modification1
+        public CSMSL.Proteomics.Modification Modification1
         {
-            get { return LabelComboBox.SelectedItem as Modification; }
+            get { return LabelComboBox.SelectedItem as CSMSL.Proteomics.Modification; }
         }
 
-        public Modification Modification2
+        public CSMSL.Proteomics.Modification Modification2
         {
-            get { return SecondaryLabelComboBox.SelectedItem as Modification; }
+            get { return SecondaryLabelComboBox.SelectedItem as CSMSL.Proteomics.Modification; }
         }
 
         private void LabelType_SelectedValueChanged(object sender, EventArgs e)

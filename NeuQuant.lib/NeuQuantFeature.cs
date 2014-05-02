@@ -218,7 +218,8 @@ namespace NeuQuant
                 return;
             }
 
-            ChemicalFormula formula = Peptide.Peptide.GetChemicalFormula();
+            // Get the chemical formula of one of the channels (should be close enough)
+            ChemicalFormula formula = Peptide.QuantifiableChannels.Values[0].GetChemicalFormula();
 
             // Adjust the percent errors
             double minPercent = 1 - percentError;

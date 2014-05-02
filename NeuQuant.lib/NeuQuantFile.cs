@@ -32,7 +32,7 @@ namespace NeuQuant.IO
         private SQLiteCommand _insertPSM;
         private SQLiteCommand _insertMod;
 
-        private SQLiteCommand _insertSample;
+        //private SQLiteCommand _insertSample;
         private SQLiteCommand _insertAnalysis;
         private SQLiteCommand _insertAnalysisParameter;
 
@@ -40,9 +40,9 @@ namespace NeuQuant.IO
 
         private SQLiteCommand _selectPeptide;
 
-        private Dictionary<long, Modification> _modifications;
+        private Dictionary<long, CSMSL.Proteomics.Modification> _modifications;
 
-        private Dictionary<long, Modification> Modifications
+        private Dictionary<long, CSMSL.Proteomics.Modification> Modifications
         {
             get
             {
@@ -82,7 +82,7 @@ namespace NeuQuant.IO
             {
                 _dbConnection.Open();
             }
-            catch (SQLiteException e)
+            catch (SQLiteException)
             {
                 return false;
             }
@@ -133,7 +133,7 @@ namespace NeuQuant.IO
                                                 FROM modifications m
                                                 WHERE type <> 'Isotopologue'", _dbConnection);
 
-            Dictionary<long, Modification> mods = new Dictionary<long, Modification>();
+            Dictionary<long, CSMSL.Proteomics.Modification> mods = new Dictionary<long, CSMSL.Proteomics.Modification>();
 
             using (var reader = selectMods.ExecuteReader())
             {
@@ -145,7 +145,7 @@ namespace NeuQuant.IO
                     double mass = (double) reader["deltaMass"];
                     bool isVariable = (bool) reader["isVariable"];
 
-                    Modification mod = new Modification(mass, name, sites);
+                    CSMSL.Proteomics.Modification mod = new CSMSL.Proteomics.Modification(mass, name, sites);
                     mods.Add(id, mod);
                 }
             }
@@ -216,6 +216,8 @@ namespace NeuQuant.IO
             }
         
         }
+
+
 
         public IEnumerable<NeuQuantPeptide> GetPeptides()
         {
@@ -293,7 +295,7 @@ namespace NeuQuant.IO
                     if (modIdObj != DBNull.Value)
                     {
                         long modId = (long) modIdObj;
-                        Modification mod = Modifications[modId];
+                        CSMSL.Proteomics.Modification mod = Modifications[modId];
                         int position = (int) reader["position"];
                         peptide.SetModification(mod, position);
                     }
@@ -442,12 +444,12 @@ namespace NeuQuant.IO
         {
             using (var transaction = _dbConnection.BeginTransaction())
             {
-                foreach (Modification mod in psmFile.FixedModifications)
+                foreach (CSMSL.Proteomics.Modification mod in psmFile.FixedModifications)
                 {
                     InsertModification(mod, false);                   
                 }
 
-                foreach (Modification mod in psmFile.VariableModifications.Values)
+                foreach (CSMSL.Proteomics.Modification mod in psmFile.VariableModifications.Values)
                 {
                     InsertModification(mod, true);
                 }
@@ -457,7 +459,7 @@ namespace NeuQuant.IO
 
         private SQLiteCommand _selectModification;
 
-        private long InsertModification(Modification mod, bool isVariable)
+        private long InsertModification(CSMSL.Proteomics.Modification mod, bool isVariable)
         {         
             long id;
             List<long> subIds = null;
@@ -465,7 +467,7 @@ namespace NeuQuant.IO
             if (isotopologue != null)
             {
                 subIds = new List<long>();
-                foreach (Modification mod2 in isotopologue.GetModifications())
+                foreach (CSMSL.Proteomics.Modification mod2 in isotopologue)
                 {
                     subIds.Add(InsertModification(mod2, isVariable));
                 }        
@@ -549,7 +551,7 @@ namespace NeuQuant.IO
             IMass[] mods = psm.Peptide.GetModifications();
             for (int i = 0; i < mods.Length; i++)
             {
-                Modification mod = mods[i] as Modification;
+                CSMSL.Proteomics.Modification mod = mods[i] as CSMSL.Proteomics.Modification;
                 if (mod != null)
                 {
                     new SQLiteCommand(@"INSERT INTO mods_to_peptides 
@@ -735,8 +737,7 @@ namespace NeuQuant.IO
                     processor.SetValue(key, value);
                 }
             }
-
-            //processor = new Processor(this, "Analysis 2", 3, 0.75, 0.75, 480000, checkIsotopicDistribution: true, noiseBandCap: false);
+           
             return processor;
         }
 

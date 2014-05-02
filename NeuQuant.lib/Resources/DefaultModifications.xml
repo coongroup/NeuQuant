@@ -45,9 +45,9 @@
       <ChemicalFormula>N{15}2N-2</ChemicalFormula>
       <ModificationSite>R</ModificationSite>
     </Modification>
-    <Modification name="EmptyK" isDefault="True" isAminoAcid="True">
+    <Modification name="Null" isDefault="True" isAminoAcid="True">
       <ChemicalFormula />
-      <ModificationSite>K</ModificationSite>
+      <ModificationSite>Any</ModificationSite>
     </Modification>
     <Modification name="Carbamidomethyl" isDefault="True" isAminoAcid="false">
       <ChemicalFormula>C2H3NO</ChemicalFormula>
@@ -78,12 +78,12 @@
     </Isotopologue>
     <Isotopologue name="SILAC Duplex" isDefault="True">
       <ModificationSite>K</ModificationSite>
-      <ModificationID>EmptyK</ModificationID>
+      <ModificationID>Null</ModificationID>
       <ModificationID>K602</ModificationID>
     </Isotopologue>
     <Isotopologue name="SILAC Triplex" isDefault="True">
       <ModificationSite>K</ModificationSite>
-      <ModificationID>EmptyK</ModificationID>
+      <ModificationID>Null</ModificationID>
       <ModificationID>K040</ModificationID>
       <ModificationID>K602</ModificationID>
     </Isotopologue>

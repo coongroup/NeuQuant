@@ -76,7 +76,7 @@ namespace NeuQuant
                 return;
             }
 
-            var newMod = new ChemicalFormulaModification(new ChemicalFormula(formula), modName, sites, isAminoAcid);
+            var newMod = new NeuQuantModification(new ChemicalFormula(formula), modName, sites, isAminoAcid);
 
             Reagents.AddModification(newMod);
         }
@@ -87,8 +87,8 @@ namespace NeuQuant
             foreach (var control in flowLayoutPanel2.Controls.Cast<QuantiativeLabelControl>())
             {
                 string channelName = control.ChannelName;
-                Modification mod1 = control.Modification1;
-                Modification mod2 = control.Modification2;
+                CSMSL.Proteomics.Modification mod1 = control.Modification1;
+                CSMSL.Proteomics.Modification mod2 = control.Modification2;
                 if(mod1 != null)
                     isotopologue.AddModification(mod1);
             }
@@ -102,7 +102,7 @@ namespace NeuQuant
 
         private void UpdateMods()
         {
-            var mod = modListBox.SelectedValue as ChemicalFormulaModification;
+            var mod = modListBox.SelectedValue as NeuQuantModification;
 
             if (mod == null)
                 return;
@@ -143,7 +143,7 @@ namespace NeuQuant
            
             flowLayoutPanel2.Controls.Clear();
             _channelCount = 1;
-            foreach (var mod in isotopologue.GetModifications())
+            foreach (var mod in isotopologue)
             {
                 var newControl = new QuantiativeLabelControl();
                 newControl.NameTextBox.Text = "Channel " + _channelCount++;
@@ -160,7 +160,7 @@ namespace NeuQuant
             if (e.KeyCode != Keys.Delete)
                 return;
       
-            var mod = modListBox.SelectedValue as ChemicalFormulaModification;
+            var mod = modListBox.SelectedValue as NeuQuantModification;
 
             if (mod == null)
                 return;
