@@ -112,7 +112,7 @@ namespace NeuQuant
                                     {
                                         int residue = int.Parse(m.Groups[2].Value);
                                         string modName = m.Groups[3].Value;
-                                        CSMSL.Proteomics.Modification modification;
+                                        Modification modification;
                                         if (VariableModifications.TryGetValue(modName, out modification))
                                         {
                                             peptide.SetModification(modification, residue);
@@ -132,6 +132,8 @@ namespace NeuQuant
 
 
                             peptide.SetModifications(FixedModifications);
+
+                            peptide.ClearModifications(SitesToIgnore);
 
                             var allMods = peptide.GetUniqueModifications<CSMSL.Proteomics.Modification>();
                             allMods.ExceptWith(FixedModifications);

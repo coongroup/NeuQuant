@@ -12,8 +12,6 @@ namespace NeuQuant
 {
     public partial class QuantiativeLabelManagerForm : DockContent
     {
-        private int _channelCount = 1;
-
         public QuantiativeLabelManagerForm()
         {
             InitializeComponent();

@@ -94,16 +94,24 @@ namespace NeuQuant.IO
         {
             if (_dbConnection.State == System.Data.ConnectionState.Open)
                 return true;
+
+            if (!IsSqliteDatabase(FilePath))
+            {
+                return false;
+            }
+
             try
             {
                 _dbConnection.Open();
             }
-            catch (SQLiteException)
+            catch (Exception)
             {
                 return false;
             }
             return true;
         }
+
+       
 
         public long SelectFile(string filePath)
         {
@@ -137,7 +145,7 @@ namespace NeuQuant.IO
         public IEnumerable<NeuQuantSample> GetSamples()
         {
             var selectSamples = new SQLiteCommand(@"SELECT * FROM samples s
-                                                    JOIN samples_to_mods stm
+                                                    LEFT JOIN samples_to_mods stm
                                                     ON stm.sampleID = s.id 
                                                     ORDER BY s.id", _dbConnection);
             using (var reader = selectSamples.ExecuteReader())
@@ -159,12 +167,15 @@ namespace NeuQuant.IO
                         condition = new ExperimentalCondition(coniditonName);
                         sample = new NeuQuantSample(sampleName, description, condition) { ID = id };
                     }
-                    
-                    long modID = (int) reader["modificationID"];
+                    object modIdObj = reader["modificationID"];
+                    if (modIdObj != DBNull.Value)
+                    {
+                        long modID = (int)modIdObj;
 
-                    Modification mod = Modifications[modID];
-                    condition.Modifications.Add(mod);
-                   
+                        Modification mod = Modifications[modID];
+                        condition.Modifications.Add(mod);
+                    }
+
                 }
                 yield return sample;
             }

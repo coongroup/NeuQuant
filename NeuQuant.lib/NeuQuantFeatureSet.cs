@@ -158,7 +158,7 @@ namespace NeuQuant
                 //    channelIntensity = noiseLevel;
                 //}
 
-                quant[channel] = channelIntensity;
+                quant[channel] = channelIntensity / avg;
             }
             return quant;
         }

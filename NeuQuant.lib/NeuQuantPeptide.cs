@@ -255,6 +255,9 @@ namespace NeuQuant
                     var channel = channelQuant.Key;
                     double quantitationValue = channelQuant.Value;
 
+                    if (noiseBandCap)
+                        quantitationValue = Math.Max(noiseLevel, quantitationValue);
+
                     NeuQuantSample sample = channelsToSamples[channel];
                     quant.AddQuantitation(sample, quantitationValue);
                 }

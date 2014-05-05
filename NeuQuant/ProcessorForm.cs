@@ -56,11 +56,17 @@ namespace NeuQuant
 
             double minRtBounds = (double) numericUpDown2.Value;
             double maxRtBounds = (double) numericUpDown3.Value;
+            double minSN = (double) numericUpDown5.Value;
+            double maxSN = (double) numericUpDown4.Value;
+            double isoPercentError = (double) numericUpDown6.Value / 100;
+            double lowSpacingPercent = (double) numericUpDown8.Value/100;
+            double highSpacingPercent = (double) numericUpDown7.Value/100;
             //double minResolution = -10;
             //if (numericUpDown3.Enabled)
             //    minResolution = (double) numericUpDown3.Value;
 
-            var processor = new Processor(nqFile, analysisName, numberOfisotopes, minRtBounds, maxRtBounds, minResolution, checkIsotopicDistribution: checkIsotopicDistribution, noiseBandCap: noiseBandCap);
+            var processor = new Processor(nqFile, analysisName, numberOfisotopes, minRtBounds, maxRtBounds, minResolution, checkIsotopicDistribution: checkIsotopicDistribution, noiseBandCap: noiseBandCap,
+                minSN: minSN, maxSN: maxSN, isotopicDistributionPercentError: isoPercentError, lowerSpacingPercent:lowSpacingPercent, upperSpacingPercent: highSpacingPercent);
             return processor;
         }
         
@@ -72,10 +78,16 @@ namespace NeuQuant
             isotopicDistributionCheck.Checked = processor.UseIsotopicDistribution;
             numericUpDown2.Value = (decimal)processor.MinimumRtDelta;
             numericUpDown3.Value = (decimal)processor.MaximumRtDelta;
-        
+            numericUpDown5.Value = (decimal) processor.MinimumSN;
+            numericUpDown4.Value = (decimal)Math.Min(processor.MaximumSN, (double)numericUpDown4.Maximum);
+            numericUpDown6.Value = (decimal) processor.IsotopicDistributionPercentError * 100;
+            numericUpDown8.Value = (decimal) processor.LowerSpacingPercent*100;
+            numericUpDown7.Value = (decimal) processor.UpperSpacingPercent*100;
+          
             double minResolution = processor.MinimumResolution;
             
             checkedListBox1.DataSource = new BindingList<double>(processor.NqFile.GetUniqueResolutions().ToList());
+            checkedListBox1.SetItemChecked(0, true);
 
             for (int i = 0; i < checkedListBox1.Items.Count; i++)
             {
@@ -93,6 +105,16 @@ namespace NeuQuant
             if (e.NewValue == CheckState.Checked)
                 for (int i = 0; i < checkedListBox1.Items.Count; ++i)
                     if (e.Index != i) checkedListBox1.SetItemChecked(i, false);
+        }
+
+        private void isotopicDistributionCheck_CheckedChanged(object sender, EventArgs e)
+        {
+            numericUpDown6.Enabled = isotopicDistributionCheck.Checked;
+        }
+
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            numericUpDown7.Enabled = numericUpDown8.Enabled = checkBox1.Checked;
         }
     }
 }

@@ -2,6 +2,8 @@
 
 using System;
 using System.Data.SQLite;
+using System.IO;
+using System.Text;
 
 namespace NeuQuant.IO
 {
@@ -231,6 +233,25 @@ namespace NeuQuant.IO
             file.Open();
             file.LoadData(psmFile, compressSpectra);
             return file;
+        }
+
+        public static bool IsSqliteDatabase(string filename)
+        {
+            if (File.Exists(filename) == false)
+            {
+                return false;
+            }
+
+            // FileShare.ReadWrite allows to the file to be read even if it's locked by another process such as something
+            // that has an active connection to the database.
+            using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                byte[] bytes = new byte[16];
+                int x = fs.Read(bytes, 0, 16);
+                fs.Close();
+                string text = ASCIIEncoding.ASCII.GetString(bytes);
+                return text.Contains("SQLite format");
+            }
         }
 
     }

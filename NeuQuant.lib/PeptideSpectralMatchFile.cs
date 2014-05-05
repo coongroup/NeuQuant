@@ -77,9 +77,31 @@ namespace NeuQuant
            
         }
         
+       
+        //private Dictionary<ModificationSites, Isotopologue> Isotopologes;
+        protected ModificationSites SitesToIgnore = ModificationSites.None;
+
         public void SetExperimentalDesign(ExperimentalSet experiment)
         {
             Experiment = experiment;
+            //Isotopologes = new Dictionary<ModificationSites, Isotopologue>();
+            
+            foreach (var mod in Experiment.GetAllModifications())
+            {
+
+                SitesToIgnore |= mod.Sites;
+                //Isotopologue iso;
+
+                //if (!Isotopologes.TryGetValue(mod.Sites, out iso))
+                //{
+                //    iso = new Isotopologue(mod.Name, mod.Sites);
+                //    Isotopologes.Add(mod.Sites, iso);
+                //    FixedModifications.Add(iso);
+                //}
+                //iso.AddModification(mod);
+            }
+
+            
         }
     }
 }

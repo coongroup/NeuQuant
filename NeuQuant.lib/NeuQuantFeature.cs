@@ -135,8 +135,8 @@ namespace NeuQuant
                 IPeak peak = peaks[i];
                 if (peak == null)
                 {
-                    if (noiseBandCap)
-                        yield return new Tuple<double, double>(double.NaN, noiseLevel);
+                    //if (noiseBandCap)
+                    //    yield return new Tuple<double, double>(double.NaN, noiseLevel);
                 }
                 else
                 {

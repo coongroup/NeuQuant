@@ -1,21 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml;
 using CSMSL.Analysis.ExperimentalDesign;
-using CSMSL.IO;
-using CSMSL.IO.Thermo;
+using Equin.ApplicationFramework;
 using NeuQuant.Processing;
 using WeifenLuo.WinFormsUI.Docking;
 using NeuQuant.IO;
 using ZedGraph;
 using CSMSL.Proteomics;
-using CSMSL.Util.Collections;
 using CSMSL;
 using CSMSL.Chemistry;
 
@@ -23,7 +23,6 @@ namespace NeuQuant
 {
     public partial class NeuQuantForm : Form
     {
-
         #region Statics
 
         public static readonly string ProgramVersion = string.Format("NeuQuant {0}-bit (v{1})", IntPtr.Size * 8, GetRunningVersion());
@@ -37,7 +36,48 @@ namespace NeuQuant
 
         public static readonly BindingList<NeuQuantModification> CurrentModifications = new BindingList<NeuQuantModification>();
         public static readonly BindingList<ExperimentalSet> CurrentExperiments = new BindingList<ExperimentalSet>();
-        public static readonly SortableBindingList<NeuQuantPeptide> LoadedPeptides = new SortableBindingList<NeuQuantPeptide>();
+        public static readonly BindingList<NeuQuantPeptide> LoadedPeptides = new BindingList<NeuQuantPeptide>();
+        public static BindingListView<NeuQuantPeptide> LoadedPeptidesView;
+
+        private static readonly string SettingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"NeuQuant\GUISettings.xml");
+
+        #endregion
+
+        #region User Gui Settings
+
+        static NeuQuantForm()
+        {
+            LoadDefaults();
+        }
+
+        private static void LoadDefaults()
+        {
+             // Create file if it doesn't exist
+            if (!File.Exists(SettingsFile))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(SettingsFile));
+                File.Copy(@"Resources/DefaultSettings.xml", SettingsFile, true);
+            }
+
+            LoadDefaults(SettingsFile);
+        }
+
+        private static void LoadDefaults(string settingsXmlFile)
+        {
+            var modsXml = new XmlDocument();
+            modsXml.Load(settingsXmlFile);
+
+            List<Color> colors = new List<Color>();
+
+            foreach (XmlNode node in modsXml.SelectNodes("//NeuQuant/Colors/Color"))
+            {
+                string name = node.Attributes["name"].Value;
+                Color c = Color.FromName(name);
+                colors.Add(c);
+            }
+
+            MasterColors = colors.ToArray();
+        }
 
         #endregion
 
@@ -54,6 +94,7 @@ namespace NeuQuant
         private QuantiativeLabelManagerForm _labelManagerForm;
         private TreeViewForm _analysesForm;
         private ProcessorForm _processorForm;
+        private SettingsForm _settingsForm;
 
         #endregion
 
@@ -182,6 +223,10 @@ namespace NeuQuant
             _labelManagerForm.DockPanel = dockPanel1;
             RegisterForm(_labelManagerForm);
             
+            _settingsForm = new SettingsForm();
+            _settingsForm.DockPanel = dockPanel1;
+            RegisterForm(_settingsForm);
+            
             _analysesForm = new TreeViewForm("Analyses");
             _analysesForm.Show(dockPanel1, DockState.DockRight);
             _analysesForm.TreeView.NodeMouseClick += TreeView_NodeMouseClick;
@@ -198,7 +243,7 @@ namespace NeuQuant
             _peptidesForm.Show(dockPanel1, DockState.DockRight);
             _peptidesForm.DataGridView.RowEnter += PeptideRowEnter;
             _peptidesForm.DataGridView.AlternatingRowsDefaultCellStyle.BackColor = Color.LightBlue;
-            
+
             _peptidesForm.DataGridView.AutoGenerateColumns = false;
             _peptidesForm.DataGridView.AllowUserToAddRows = false;
             _peptidesForm.DataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
@@ -206,6 +251,7 @@ namespace NeuQuant
             
             DataGridViewTextBoxColumn sequenceColumn = new DataGridViewTextBoxColumn();
             sequenceColumn.DataPropertyName = "Sequence";
+            sequenceColumn.Name = "Sequence";
             sequenceColumn.HeaderText = "Sequence";
             _peptidesForm.DataGridView.Columns.Add(sequenceColumn);
 
@@ -219,8 +265,9 @@ namespace NeuQuant
             channelsColumn.HeaderText = "# Quantitative Channels";
             _peptidesForm.DataGridView.Columns.Add(channelsColumn);
             
-            _peptidesForm.DataGridView.DataSource = LoadedPeptides;
- 
+            LoadedPeptidesView = new BindingListView<NeuQuantPeptide>(LoadedPeptides);
+            _peptidesForm.DataGridView.DataSource = LoadedPeptidesView;
+
             RegisterForm(_peptidesForm);
             _peptidesForm.Hide();
 
@@ -229,7 +276,6 @@ namespace NeuQuant
 
             LogMessage(" == " + ProgramVersion + " == ", false);
             
-
             base.OnLoad(e);
         }
 
@@ -300,8 +346,15 @@ namespace NeuQuant
                 }
                
 
-                _currentNQFile = file;              
-                _currentNQFile.Open();
+                _currentNQFile = file;
+
+
+                if (!_currentNQFile.Open())
+                {
+                    LogMessage("ERROR: " + _currentNQFile.FilePath +" is not a valid database file");
+                    _currentNQFile = null;
+                    return;
+                }
 
                 if (!_currentNQFile.TryGetLastProcessor(out _currentProcessor))
                 {
@@ -523,8 +576,8 @@ namespace NeuQuant
 
             double biggestSpacing = 0;
 
-            double minTolerance = 0.4;
-            double maxTolerance = 1.15;
+            double minTolerance = 1 - _currentProcessor.LowerSpacingPercent;
+            double maxTolerance = 1 + _currentProcessor.UpperSpacingPercent;
 
             int index = 0;
             double totalSpacing = 0;
@@ -571,7 +624,7 @@ namespace NeuQuant
                     expectedLine.Line.Style = DashStyle.Dot;
                     control.GraphPane.GraphObjList.Add(expectedLine);
 
-                    BoxObj boxObj = new BoxObj(0, expectedSpacing * maxTolerance, 1, expectedSpacing * minTolerance, Color.Empty, Color.FromArgb(50, color));
+                    BoxObj boxObj = new BoxObj(0, expectedSpacing * maxTolerance, 1, expectedSpacing * (maxTolerance - minTolerance), Color.Empty, Color.FromArgb(50, color));
                     boxObj.Location.CoordinateFrame = CoordType.XChartFractionYScale;
                     boxObj.ZOrder = ZOrder.F_BehindGrid;
                     boxObj.IsClippedToChartRect = true;
@@ -591,9 +644,7 @@ namespace NeuQuant
             
             control.GraphPane.XAxis.Scale.Min = minRT;
             control.GraphPane.XAxis.Scale.Max = maxRT;
-
-
-
+            
             // Hide the y=0 axis line
             control.GraphPane.YAxis.MajorGrid.IsZeroLine = false;
             
@@ -603,7 +654,7 @@ namespace NeuQuant
             RefreshGraph(control);
         }
 
-        private void PlotXIC(ZedGraphControl control, NeuQuantFeatureSet featureSet, double deltaRT = 0.75)
+        private void PlotXIC(ZedGraphControl control, NeuQuantFeatureSet featureSet)
         {
             if (_currentNQFile == null)
                 return;
@@ -618,7 +669,6 @@ namespace NeuQuant
 
             ClearGraph(control);
             
-
             var isotopologues = featureSet.Peptide.QuantifiableChannels.Values;
             control.GraphPane.Title.Text = "";
             int colorI = 0;
@@ -764,33 +814,23 @@ namespace NeuQuant
             item.Line.GradientFill.RangeMax = colors.Count - 1;
             item.Line.Width = 2F;
             int c = 0;
+
+            int numberOfisotopes = _currentProcessor.NumberOfIsotopesToQuantify;
            
             foreach (var isotopologue in isotopologues)
             {
                 c++;
-                string message = string.Join(",", isotopologue.GetUniqueModifications<CSMSL.Proteomics.Modification>());
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < numberOfisotopes; i++)
                 {
-                    double mz = isotopologue.ToMz(psm.Charge, i);
-                    
-                    PointPair bestPoint = null;
-                    double bestSpacing = double.MaxValue;
-                    foreach (var pointpair in pointPairList)
-                    {
-                        double spacing = Math.Abs(pointpair.X - mz);
-                        if (spacing < bestSpacing)
-                        {
-                            bestSpacing = spacing;
-                            bestPoint = pointpair;
-                        }
-                    }
+                    var peak = feature.GetChannelpeak(isotopologue, i);
+                    if(peak == null)
+                        continue;
 
-                    double ppm = Tolerance.GetTolerance(mz + bestSpacing, mz, ToleranceType.PPM);
+                    PointPair bestPoint = pointPairList.FirstOrDefault(pointpair => peak.X.MassEquals(pointpair.X));
 
-                    if (ppm < 10)
-                    {
+                    if(bestPoint !=null)
                         bestPoint.ColorValue = c;
-                    }
+                    
                 }
             }
          
@@ -1007,8 +1047,13 @@ namespace NeuQuant
 
         #endregion
 
+        #region General Handlers
+
         private void PeptideRowEnter(object sender, DataGridViewCellEventArgs e)
         {
+            if (_currentProcessor == null)
+                return;
+
             DataGridView dgv = sender as DataGridView;
             if (dgv == null)
                 return;
@@ -1017,7 +1062,11 @@ namespace NeuQuant
             if (row == null)
                 return;
 
-            NeuQuantPeptide peptide = row.DataBoundItem as NeuQuantPeptide;
+            ObjectView<NeuQuantPeptide> peptideView = row.DataBoundItem as ObjectView<NeuQuantPeptide>;
+            if (peptideView == null)
+                return;
+            
+            NeuQuantPeptide peptide = peptideView.Object;
             if (peptide == null)
                 return;
 
@@ -1029,10 +1078,7 @@ namespace NeuQuant
                 RefreshGraph(_spacingForm.GraphControl);
                 return;
             }
-
-            if (_currentProcessor == null)
-                return;
-
+            
             try
             {
                 List<NeuQuantFeatureSet> featureSets = _currentProcessor.ExtractFeatureSets(peptide).ToList();
@@ -1094,9 +1140,12 @@ namespace NeuQuant
             }
         }
 
+        #endregion
+
         private void LoadPeptides(NeuQuantFile nqFile)
         {
             LoadedPeptides.Clear();
+
             LoadedPeptides.RaiseListChangedEvents = false;
             foreach (var peptide in nqFile.GetPeptides().Where(p => p.ContainsQuantitativeChannel))
             {
@@ -1250,6 +1299,23 @@ namespace NeuQuant
         private void File_DropDownOpening(object sender, EventArgs e)
         {
             exportDataToolStripMenuItem.Enabled = (_currentAnalysisID >= 0);
+        }
+
+        private void settingsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _settingsForm.Show();
+        }
+
+        private void toolStripTextBox1_TextChanged(object sender, EventArgs e)
+        {
+            if (LoadedPeptidesView == null)
+                return;
+
+            string sequence = toolStripTextBox1.Text;
+            if (!string.IsNullOrEmpty(sequence) )
+            {
+                LoadedPeptidesView.ApplyFilter(p => p.Sequence.Contains(sequence));
+            }
         }
    
     }

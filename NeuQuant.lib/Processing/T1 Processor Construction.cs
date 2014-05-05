@@ -32,9 +32,7 @@ namespace NeuQuant.Processing
 
         protected Func<double, int, double> TheoreticalSpacing;
         protected Predicate<NeuQuantPeptide> Resolvable;
-
-        private List<NeuQuantSample> _samples;
-
+        
         public string Name { get; internal set; }
         public long ID { get; internal set; }
 
@@ -47,7 +45,8 @@ namespace NeuQuant.Processing
 
         public Processor(NeuQuantFile nqFile, string name = "Default", int isotopesToQuantify = 3, double minRtDelta = 0.25, double maxRtDelta = 0.25, 
             double resolution = 240000, double resolutionAt = 400, double quantAtPeakHeight = 10, bool checkIsotopicDistribution = true,
-            bool noiseBandCap = true, double lowerSpacingPercent = 0.25, double upperSpacingPercent = 0.15)
+            bool noiseBandCap = true, double lowerSpacingPercent = 0.25, double upperSpacingPercent = 0.15, double minSN = 0, double maxSN = double.MaxValue,
+            double isotopicDistributionPercentError = 0.25)
         {
             NqFile = nqFile;
             NumberOfIsotopesToQuantify = isotopesToQuantify;
@@ -55,17 +54,20 @@ namespace NeuQuant.Processing
             MaximumRtDelta = maxRtDelta;
             MS2Tolerance = new Tolerance(ToleranceType.PPM, 10);
             MinimumResolution = resolution;
+            MinimumSN = minSN;
+            MaximumSN = maxSN;
 
             NoiseBandCap = noiseBandCap;
+
+            // Distribution Checks
             UseIsotopicDistribution = checkIsotopicDistribution;
-            
+            IsotopicDistributionPercentError = isotopicDistributionPercentError;
+
             LowerSpacingPercent = lowerSpacingPercent;
             UpperSpacingPercent = upperSpacingPercent;
 
             Name = name;
-            MinimumSN = 3;
-            MaximumSN = double.MaxValue;
-            IsotopicDistributionPercentError = 0.25;
+            
             MaximumRtRangePerFeature = 3;
 
             double coefficient = Math.Sqrt(Math.Log(100.0 / quantAtPeakHeight)) / Math.Sqrt(Math.Log(2));
