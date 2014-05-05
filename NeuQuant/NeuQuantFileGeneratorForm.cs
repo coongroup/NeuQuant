@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.Remoting.Messaging;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CSMSL.Analysis.ExperimentalDesign;
 using CSMSL.Proteomics;
 using NeuQuant.IO;
 
@@ -56,7 +57,7 @@ namespace NeuQuant
             userDescription.SortMode = DataGridViewColumnSortMode.NotSortable;
             dataGridView1.Columns.Add(userDescription);
 
-            listBox1.DataSource = NeuQuantForm.CurrentIsotopologues;
+            listBox1.DataSource = NeuQuantForm.CurrentExperiments;
             checkedListBox1.DataSource = NeuQuantForm.CurrentModifications;
             checkedListBox1.DisplayMember = "NameAndSites";
         }
@@ -105,8 +106,8 @@ namespace NeuQuant
         {
             string outputFile = outputFileTB.Text;
 
-            Isotopologue isotopologue = listBox1.SelectedValue as Isotopologue;
-            if (isotopologue == null)
+            ExperimentalSet experiment = listBox1.SelectedValue as ExperimentalSet;
+            if (experiment == null)
                 return;
 
             PsmFileImporter psmFileImporter = flowLayoutPanel1.Controls[0] as PsmFileImporter;
@@ -114,20 +115,21 @@ namespace NeuQuant
             // Get the psmfilereader from the control;
             var psmFile = psmFileImporter.GetPsmFile();
             
-            // Add the quantitative label isotopologue
-            psmFile.AddFixedModification(isotopologue);
+            // Add the quantitative experimental design 
+            psmFile.SetExperimentalDesign(experiment);
 
+            foreach (DataGridViewRow row in dataGridView1.Rows)
+            {
+                var condition = row.Tag as ExperimentalCondition;
+                string name = row.Cells["name"].Value.ToString();
+                string description = row.Cells["Description"].Value.ToString();
+                psmFile.SetChannel(name, description, condition);
+            }
+
+            // Add other fixed modifications
             foreach (var modification in checkedListBox1.CheckedItems.OfType<NeuQuantModification>())
             {
                 psmFile.AddFixedModification(modification);
-            }
-            
-            foreach (DataGridViewRow row in dataGridView1.Rows)
-            {
-                var mod = row.Tag as CSMSL.Proteomics.Modification;
-                string name = row.Cells["name"].Value.ToString();
-                string description = row.Cells["Description"].Value.ToString();
-                psmFile.SetChannel(name, description, mod);
             }
           
             NeuQuantFile nqFile = null;
@@ -146,8 +148,8 @@ namespace NeuQuant
 
         private void UpdateLabels()
         {
-            Isotopologue isotopologue = listBox1.SelectedValue as Isotopologue;
-            if(isotopologue == null)
+            ExperimentalSet experiment = listBox1.SelectedValue as ExperimentalSet;
+            if (experiment == null)
                 return;
 
             if (dataGridView1.ColumnCount == 0)
@@ -155,10 +157,10 @@ namespace NeuQuant
 
             dataGridView1.Rows.Clear();
             int i = 1;
-            foreach (var mod in isotopologue)
+            foreach (var condition in experiment)
             {
-                int row = dataGridView1.Rows.Add(new[] {mod.Name, "Sample " + i++, ""});
-                dataGridView1.Rows[row].Tag = mod;
+                int row = dataGridView1.Rows.Add(new[] {condition.Name, "Sample " + i++, string.Join(",", condition.Modifications)});
+                dataGridView1.Rows[row].Tag = condition;
             }
         }
 

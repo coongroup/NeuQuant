@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Data.SQLite;
+using CSMSL.Analysis.ExperimentalDesign;
 using CSMSL.IO;
 using CSMSL.IO.Thermo;
 using CSMSL.Proteomics;
@@ -32,7 +33,7 @@ namespace NeuQuant.IO
         private SQLiteCommand _insertPSM;
         private SQLiteCommand _insertMod;
 
-        //private SQLiteCommand _insertSample;
+        private SQLiteCommand _insertSample;
         private SQLiteCommand _insertAnalysis;
         private SQLiteCommand _insertAnalysisParameter;
 
@@ -54,6 +55,19 @@ namespace NeuQuant.IO
             }
         }
 
+        private List<NeuQuantSample> _samples;
+        public List<NeuQuantSample> Samples
+        {
+            get
+            {
+                if (_samples == null)
+                {
+                    _samples = GetSamples().ToList();
+                }
+                return _samples;
+            }
+        }
+
         public NeuQuantFile(string filePath)
         {
             FilePath = filePath;
@@ -70,7 +84,9 @@ namespace NeuQuant.IO
             _selectModification = new SQLiteCommand(@"SELECT id FROM modifications WHERE name = @name", _dbConnection);
             _insertAnalysis = new SQLiteCommand(@"INSERT INTO analyses (createDate, name) VALUES (DateTime('now'), @name)", _dbConnection);
             _insertAnalysisParameter = new SQLiteCommand(@"INSERT INTO analysisParameters (analysisID, key, value) VALUES (@analysisID, @key, @value)", _dbConnection);
-            
+            _insertSample = new SQLiteCommand(@"INSERT INTO samples (conditionName, sampleName, sampleDescription) VALUES (@conditionName, @sampleName, @sampleDescription)", _dbConnection);
+
+
             _insertQuantitation = new SQLiteCommand(@"INSERT INTO quantitation (analysisID, peptideID, sampleID, quantitation) VALUES (@analysisID, @peptideID, @sampleID, @quantitation)", _dbConnection);
         }
 
@@ -105,24 +121,52 @@ namespace NeuQuant.IO
             return SelectFile(filePath);
         }
 
+        public IEnumerable<double> GetUniqueResolutions()
+        {
+            var selectResolutions = new SQLiteCommand(@"SELECT DISTINCT resolution FROM spectra WHERE resolution > 0 ORDER BY resolution ASC", _dbConnection);
+            using (var reader = selectResolutions.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    double resolution = (double) reader["resolution"];
+                    yield return resolution;
+                }
+            }
+        }
+
         public IEnumerable<NeuQuantSample> GetSamples()
         {
             var selectSamples = new SQLiteCommand(@"SELECT * FROM samples s
                                                     JOIN samples_to_mods stm
-                                                    ON stm.sampleID = s.id", _dbConnection);
+                                                    ON stm.sampleID = s.id 
+                                                    ORDER BY s.id", _dbConnection);
             using (var reader = selectSamples.ExecuteReader())
             {
+                long lastId = -1;
+                ExperimentalCondition condition = null;
+                NeuQuantSample sample = null;
                 while (reader.Read())
                 {
-                    string name = (string) reader["name"];
-                    string description = (string) reader["description"];
-                    long id = (long) reader["id"];
+                    long id = (long)reader["id"];
+                    if (id != lastId)
+                    {
+                        lastId = id;
+                        if (condition != null)
+                            yield return sample;
+                        string coniditonName = (string)reader["conditionName"];
+                        string sampleName = (string) reader["sampleName"];
+                        string description = (string)reader["sampleDescription"];
+                        condition = new ExperimentalCondition(coniditonName);
+                        sample = new NeuQuantSample(sampleName, description, condition) { ID = id };
+                    }
+                    
                     long modID = (int) reader["modificationID"];
 
-                    var sample = new NeuQuantSample(name, description) { ID = id };
-                    sample.AddModification(Modifications[modID]);
-                    yield return sample;
+                    Modification mod = Modifications[modID];
+                    condition.Modifications.Add(mod);
+                   
                 }
+                yield return sample;
             }
         }
 
@@ -183,7 +227,7 @@ namespace NeuQuant.IO
         {
             var samples = GetSamples().ToDictionary(s => s.Name);
 
-            var selectQuantitation = new SQLiteCommand(@"SELECT s.name AS sampleName, sequence, quantitation
+            var selectQuantitation = new SQLiteCommand(@"SELECT s.sampleName AS sampleName, sequence, quantitation
                                                             FROM quantitation q
                                                             JOIN samples s
                                                             ON q.sampleID = s.id
@@ -216,19 +260,18 @@ namespace NeuQuant.IO
             }
         
         }
-
-
-
+        
         public IEnumerable<NeuQuantPeptide> GetPeptides()
-        {
+        { 
             NeuQuantPeptide currentPeptide = new NeuQuantPeptide();
             foreach (PeptideSpectrumMatch psm in GetPsms().OrderBy(psm => psm.PeptideID))
             {
-                if (currentPeptide.AddPeptideSpectrumMatch(psm))
+                if (currentPeptide.AddPeptideSpectrumMatch(psm, Samples))
                     continue;
 
                 yield return currentPeptide;
-                currentPeptide = new NeuQuantPeptide(psm);
+                currentPeptide = new NeuQuantPeptide();
+                currentPeptide.AddPeptideSpectrumMatch(psm, Samples);
             }
             yield return currentPeptide;
         }
@@ -295,7 +338,7 @@ namespace NeuQuant.IO
                     if (modIdObj != DBNull.Value)
                     {
                         long modId = (long) modIdObj;
-                        CSMSL.Proteomics.Modification mod = Modifications[modId];
+                        Modification mod = Modifications[modId];
                         int position = (int) reader["position"];
                         peptide.SetModification(mod, position);
                     }
@@ -402,10 +445,13 @@ namespace NeuQuant.IO
 
         private void LoadSample(NeuQuantSample sample)
         {
-            new SQLiteCommand(@"INSERT INTO samples (name, description) VALUES ('" + sample.Name + "','" + sample.Description + "')", _dbConnection).ExecuteNonQuery();
+            _insertSample.Parameters.AddWithValue("@conditionName", sample.Condition.Name);
+            _insertSample.Parameters.AddWithValue("@sampleName", sample.Name);
+            _insertSample.Parameters.AddWithValue("@sampleDescription", sample.Description);
+            _insertSample.ExecuteNonQuery();
             long sampleID = _dbConnection.LastInsertRowId;
 
-            foreach (var modification in sample.Modifications)
+            foreach (var modification in sample.Condition.Modifications)
             {
                 new SQLiteCommand(@"INSERT INTO samples_to_mods (sampleID, modificationID) VALUES ('" + sampleID + "', (SELECT id FROM modifications WHERE name = '" + modification.Name + "' AND sites = '" + (int)modification.Sites + "' ) )", _dbConnection).ExecuteNonQuery();
             }
@@ -444,12 +490,17 @@ namespace NeuQuant.IO
         {
             using (var transaction = _dbConnection.BeginTransaction())
             {
-                foreach (CSMSL.Proteomics.Modification mod in psmFile.FixedModifications)
+                foreach (Modification mod in psmFile.Experiment.GetAllModifications())
+                {
+                    InsertModification(mod, false);
+                }
+
+                foreach (Modification mod in psmFile.FixedModifications)
                 {
                     InsertModification(mod, false);                   
                 }
 
-                foreach (CSMSL.Proteomics.Modification mod in psmFile.VariableModifications.Values)
+                foreach (Modification mod in psmFile.VariableModifications.Values)
                 {
                     InsertModification(mod, true);
                 }
@@ -459,7 +510,7 @@ namespace NeuQuant.IO
 
         private SQLiteCommand _selectModification;
 
-        private long InsertModification(CSMSL.Proteomics.Modification mod, bool isVariable)
+        private long InsertModification(Modification mod, bool isVariable)
         {         
             long id;
             List<long> subIds = null;
@@ -467,7 +518,7 @@ namespace NeuQuant.IO
             if (isotopologue != null)
             {
                 subIds = new List<long>();
-                foreach (CSMSL.Proteomics.Modification mod2 in isotopologue)
+                foreach (Modification mod2 in isotopologue)
                 {
                     subIds.Add(InsertModification(mod2, isVariable));
                 }        
@@ -662,7 +713,7 @@ namespace NeuQuant.IO
             return null;
         }
 
-        public IEnumerable<NeuQuantSpectrum> GetSpectra(double minRT, double maxRT, long fileID, int msnOrder = 1, double minResolution = 0)
+        public IEnumerable<NeuQuantSpectrum> GetSpectra(double minRT, double maxRT, long fileID,  int msnOrder = 1, double minResolution = 0)
         {
             _selectSpectrum.Parameters.AddWithValue("@minRT", minRT);
             _selectSpectrum.Parameters.AddWithValue("@maxRT", maxRT);

@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CSMSL.Analysis.ExperimentalDesign;
 using CSMSL.IO;
 using CSMSL.IO.Thermo;
 using NeuQuant.Processing;
@@ -35,9 +36,8 @@ namespace NeuQuant
         public static Color[] MasterColors = {Color.CornflowerBlue, Color.Sienna, Color.YellowGreen};
 
         public static readonly BindingList<NeuQuantModification> CurrentModifications = new BindingList<NeuQuantModification>();
-        public static readonly BindingList<Isotopologue> CurrentIsotopologues = new BindingList<Isotopologue>();
-        
-        public SortableBindingList<NeuQuantPeptide> LoadedPeptides = new SortableBindingList<NeuQuantPeptide>();
+        public static readonly BindingList<ExperimentalSet> CurrentExperiments = new BindingList<ExperimentalSet>();
+        public static readonly SortableBindingList<NeuQuantPeptide> LoadedPeptides = new SortableBindingList<NeuQuantPeptide>();
 
         #endregion
 
@@ -48,7 +48,7 @@ namespace NeuQuant
         private GraphForm _xicForm;
         private GraphForm _spacingForm;
         private GraphForm _histrogramForm;
-        //private DGVForm _psmsForm;
+      
         private DGVForm _peptidesForm;
         private NeuQuantFileGeneratorForm _nqFileGeneratorForm;
         private QuantiativeLabelManagerForm _labelManagerForm;
@@ -72,22 +72,22 @@ namespace NeuQuant
             InitializeComponent();
             
             Reagents.ModificationsChanged += (sender, e) => RefreshModifications();
-            Reagents.IsotopologuesChanged += (sender, e) => RefreshIsotopologues();
+            Reagents.ExperimentsChanged += (sender, e) => RefreshExperiments();
             NeuQuantFile.OnProgess += OnProgress;
             NeuQuantFile.OnMessage += OnMessage;
 
-            RefreshIsotopologues();
+            RefreshExperiments();
             RefreshModifications();
         }
 
-        private void RefreshIsotopologues()
+        private void RefreshExperiments()
         {
-            CurrentIsotopologues.RaiseListChangedEvents = false;
-            CurrentIsotopologues.Clear();
-            foreach (var iso in Reagents.GetAllIsotopologue())
-                CurrentIsotopologues.Add(iso);
-            CurrentIsotopologues.RaiseListChangedEvents = true;
-            CurrentIsotopologues.ResetBindings();
+            CurrentExperiments.RaiseListChangedEvents = false;
+            CurrentExperiments.Clear();
+            foreach (var experiment in Reagents.GetAllExperiments())
+                CurrentExperiments.Add(experiment);
+            CurrentExperiments.RaiseListChangedEvents = true;
+            CurrentExperiments.ResetBindings();
         }
 
         private void RefreshModifications()
@@ -247,8 +247,7 @@ namespace NeuQuant
 
             dgvForm.AppendTitle("(n=" + rows + ")");
         }
-        
-
+       
         private void _processorForm_Analyze(object sender, EventArgs e)
         {
             ProcessorForm processorForm = sender as ProcessorForm;
@@ -304,8 +303,11 @@ namespace NeuQuant
                 _currentNQFile = file;              
                 _currentNQFile.Open();
 
-                // TODO figure out loading default processor.
-                _currentProcessor = new Processor(_currentNQFile, "Analysis 1", 3, 0.75, 0.75, -10, checkIsotopicDistribution: true, noiseBandCap: false);
+                if (!_currentNQFile.TryGetLastProcessor(out _currentProcessor))
+                {
+                    _currentProcessor = _processorForm.GetProcessor(_currentNQFile);
+                }
+
                 _currentProcessor.Open();
 
                 LogMessage("Loaded NeuQuant File " + _currentNQFile.FilePath);
@@ -316,6 +318,7 @@ namespace NeuQuant
                     return;
                
                 Text = ProgramVersion + " - " + _currentNQFile.FilePath;
+                _processorForm.SetProcessor(_currentProcessor);
                 LoadAnalyses(_currentNQFile, _analysesForm, true);
                 LoadPeptides(_currentNQFile);
                 _peptidesForm.Show();
@@ -1085,6 +1088,7 @@ namespace NeuQuant
             {
                 _currentAnalysisID = (long)node.Tag;
                 _currentProcessor = _currentNQFile.GetProcessor(_currentAnalysisID);
+                _processorForm.SetProcessor(_currentProcessor);
                 DisplayResults(_currentNQFile, _currentAnalysisID, _histrogramForm.GraphControl);
                 _histrogramForm.Show();
             }
@@ -1170,6 +1174,7 @@ namespace NeuQuant
                 processor.Message += OnMessage;
 
                 processor.Open();
+                processor.SaveAnalysis();
                 processor.GetPeptides();
                 processor.FilterPeptides();
                 processor.ExtractFeatureSets();
@@ -1199,8 +1204,6 @@ namespace NeuQuant
                 LoadNeuQuantFile(openFileDialog1.FileName);
             }
         }
-
-
 
         private void peptideQuantitationToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -1241,52 +1244,6 @@ namespace NeuQuant
                     }
                     writer.WriteLine();
                 }
-                
-                //for (int i = 0; i < samples.Count - 1; i++)
-                //{
-                //    NeuQuantSample sample1 = samples[i];
-                //    for (int j = i + 1; j < samples.Count; j++)
-                //    {
-                //        NeuQuantSample sample2 = samples[j];
-                        
-                //        List<double> log2ratios = new List<double>();
-                //        foreach (var quant in quants)
-                //        {
-                //            double quant1 = quant.Item2[sample1];
-                //            double quant2 = quant.Item2[sample2];
-
-                //            double ratio = quant1/quant2;
-                //            double log2ratio = Math.Log(ratio, 2);
-
-                //            // Prevent oddities
-                //            if (double.IsNaN(log2ratio) || double.IsInfinity(log2ratio))
-                //                continue;
-
-                //            log2ratios.Add(log2ratio);
-                //        }
-
-                //        int count = log2ratios.Count;
-                //        if (count == 0)
-                //            return;
-
-                //        double mean = log2ratios.Average();
-                //        double median = log2ratios.Median();
-                //        double stdev = log2ratios.StdDev();
-
-                //        PointPairList points = new PointPairList();
-                //        int numberOfBins = 100;
-                //        double min, max, stepSize;
-                //        int[] bins = log2ratios.Histogram(numberOfBins, out min, out max, out stepSize);
-                //        for (int k = 0; k < numberOfBins; k++)
-                //        {
-                //            points.Add(min + k*stepSize, bins[k]);
-                //        }
-
-                //        LineItem line = control.GraphPane.AddCurve(string.Format("({0}/{1}) N={2} u={3:f3} m={4:f3} stdev={5:f3}", sample1.Name, sample2, count, Math.Pow(2, mean), Math.Pow(2, median), stdev), points, color, SymbolType.None);
-                //        line.Line.Width = 2.5f;
-                //    }
-                //}
-
             }
         }
 

@@ -20,7 +20,7 @@ namespace NeuQuant.Processing
 
             foreach (var peptide in peptides)
             {
-                var quant = peptide.Quantify(_samples, noiseBandCap, noiseLevel);
+                var quant = peptide.Quantify(noiseBandCap, noiseLevel);
 
                 NqFile.InsertQuantitation(this, quant);
                 count++;

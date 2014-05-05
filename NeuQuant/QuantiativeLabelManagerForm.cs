@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using CSMSL;
+using CSMSL.Analysis.ExperimentalDesign;
 using CSMSL.Proteomics;
 using WeifenLuo.WinFormsUI.Docking;
 using CSMSL.Chemistry;
@@ -22,7 +23,7 @@ namespace NeuQuant
             siteListBox.Items.Remove(ModificationSites.All);
 
             modListBox.DataSource = NeuQuantForm.CurrentModifications;
-            isotopologueListBox.DataSource = NeuQuantForm.CurrentIsotopologues;
+            experimentsListBox.DataSource = NeuQuantForm.CurrentExperiments;
         }
         
         void removeButton_Click2(object sender, EventArgs e)
@@ -45,11 +46,8 @@ namespace NeuQuant
         private void button3_Click_1(object sender, EventArgs e)
         {
             var newControl = new QuantiativeLabelControl();
-            newControl.NameTextBox.Text = "Channel " + _channelCount;
-            newControl.LabelComboBox.DataSource = NeuQuantForm.CurrentModifications; ;
-            newControl.SecondaryLabelComboBox.DataSource = NeuQuantForm.CurrentModifications; ;
+            newControl.NameTextBox.Text = "Channel " + flowLayoutPanel2.Controls.Count;
             AddNewQuantitativeLabel(flowLayoutPanel2, newControl);
-            _channelCount++;
         }
 
         private void createChannelButton_Click(object sender, EventArgs e)
@@ -81,18 +79,14 @@ namespace NeuQuant
             Reagents.AddModification(newMod);
         }
 
-        private void SaveIsotopologue(string name)
+        private void SaveExperiment(string name)
         {
-            Isotopologue isotopologue = new Isotopologue(name);
+            ExperimentalSet experiment = new ExperimentalSet(name);
             foreach (var control in flowLayoutPanel2.Controls.Cast<QuantiativeLabelControl>())
             {
-                string channelName = control.ChannelName;
-                CSMSL.Proteomics.Modification mod1 = control.Modification1;
-                CSMSL.Proteomics.Modification mod2 = control.Modification2;
-                if(mod1 != null)
-                    isotopologue.AddModification(mod1);
+                experiment.Add(control.GetCondition());
             }
-            Reagents.AddIsotopologue(isotopologue);
+            Reagents.AddExperiment(experiment);
         }
 
         private void modListBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -131,25 +125,21 @@ namespace NeuQuant
 
         private void isotopologueListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            UpdateQuantitativeLabelControls();
+            UpdateExperiments();
         }
 
-        private void UpdateQuantitativeLabelControls()
+        private void UpdateExperiments()
         {
-            Isotopologue isotopologue = isotopologueListBox.SelectedValue as Isotopologue;
+            ExperimentalSet experiment = experimentsListBox.SelectedValue as ExperimentalSet;
 
-            if (isotopologue == null)
+            if (experiment == null)
                 return;
            
             flowLayoutPanel2.Controls.Clear();
-            _channelCount = 1;
-            foreach (var mod in isotopologue)
+           
+            foreach (var condition in experiment)
             {
-                var newControl = new QuantiativeLabelControl();
-                newControl.NameTextBox.Text = "Channel " + _channelCount++;
-                newControl.LabelComboBox.DataSource = NeuQuantForm.CurrentModifications; 
-                newControl.SecondaryLabelComboBox.DataSource = NeuQuantForm.CurrentModifications;
-                newControl.LabelComboBox.SelectedItem = mod;
+                var newControl = new QuantiativeLabelControl(condition);
                 newControl.removeButton.Click += removeButton_Click2;
                 flowLayoutPanel2.Controls.Add(newControl);
             }
@@ -173,26 +163,26 @@ namespace NeuQuant
             }
 
 
-            List<Isotopologue> isotopoglues = new List<Isotopologue>();
+            var isotopoglues = new List<ExperimentalSet>();
 
-            foreach (Isotopologue iso in Reagents.GetAllIsotopologue())
+            foreach (ExperimentalSet experiment in Reagents.GetAllExperiments())
             {
-                if (iso.Contains(mod))
+                if (experiment.Contains(mod))
                 {
-                    isotopoglues.Add(iso);
+                    isotopoglues.Add(experiment);
                 }
             }
 
             if (isotopoglues.Count > 0)
             {
                 string dependingIso = string.Join(",", isotopoglues.Select(iso => iso.Name));
-                DialogResult result = MessageBox.Show("The following isotopologues depend on this mod:\n(" + dependingIso
-                                                        + ")\nDeleting will also remove these isotopologues!", "Delete the " + mod.Name + " Modification?", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
+                DialogResult result = MessageBox.Show("The following experiments depend on this mod:\n(" + dependingIso
+                                                        + ")\nDeleting will also remove these experiments!", "Delete the " + mod.Name + " Modification?", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
                 if (result == DialogResult.OK)
                 {
                     foreach(var iso in isotopoglues)
                     {
-                        Reagents.RemoveIsotopologue(iso.Name);
+                        Reagents.RemoveExperiment(iso.Name);
                     }
                 }
                 else
@@ -203,14 +193,27 @@ namespace NeuQuant
 
             // Nothing depends on it, so remove it
             Reagents.RemoveModification(mod.Name);
-                
-            
-
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            SaveIsotopologue(textBox1.Text);
+            SaveExperiment(textBox1.Text);
+        }
+
+        private void modListBox_MouseDown(object sender, MouseEventArgs e)
+        {
+            var listbox = sender as ListBox;
+            if (listbox == null || listbox.Items.Count == 0)
+                return;
+
+            int index = listbox.IndexFromPoint(e.X, e.Y);
+            var item = listbox.Items[index];
+            DragDropEffects dde = DoDragDrop(item, DragDropEffects.All);
+
+            //if (dde == DragDropEffects.All)
+            //{
+            //    listBox1.Items.RemoveAt(listBox1.IndexFromPoint(e.X, e.Y));
+            //} 
         }
     }
 }

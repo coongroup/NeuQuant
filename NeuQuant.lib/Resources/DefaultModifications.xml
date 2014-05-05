@@ -45,10 +45,6 @@
       <ChemicalFormula>N{15}2N-2</ChemicalFormula>
       <ModificationSite>R</ModificationSite>
     </Modification>
-    <Modification name="Null" isDefault="True" isAminoAcid="True">
-      <ChemicalFormula />
-      <ModificationSite>Any</ModificationSite>
-    </Modification>
     <Modification name="Carbamidomethyl" isDefault="True" isAminoAcid="false">
       <ChemicalFormula>C2H3NO</ChemicalFormula>
       <ModificationSite>C</ModificationSite>
@@ -64,28 +60,40 @@
       <ModificationSite>Y</ModificationSite>
     </Modification>
   </Modifications>
-  <Isotopologues>
-    <Isotopologue name="NeuCode Duplex" isDefault="True">
-      <ModificationSite>K</ModificationSite>
-      <ModificationID>K602</ModificationID>
-      <ModificationID>K080</ModificationID>
-    </Isotopologue>
-    <Isotopologue name="NeuCode Triplex" isDefault="True">
-      <ModificationSite>K</ModificationSite>
-      <ModificationID>K602</ModificationID>
-      <ModificationID>K341</ModificationID>
-      <ModificationID>K080</ModificationID>
-    </Isotopologue>
-    <Isotopologue name="SILAC Duplex" isDefault="True">
-      <ModificationSite>K</ModificationSite>
-      <ModificationID>Null</ModificationID>
-      <ModificationID>K602</ModificationID>
-    </Isotopologue>
-    <Isotopologue name="SILAC Triplex" isDefault="True">
-      <ModificationSite>K</ModificationSite>
-      <ModificationID>Null</ModificationID>
-      <ModificationID>K040</ModificationID>
-      <ModificationID>K602</ModificationID>
-    </Isotopologue>
-  </Isotopologues>
+  <ExperimentalSets>
+    <ExperimentalSet name="NeuCode Duplex" isDefault="True">
+      <ExperimentalCondition name ="Light">
+        <ModificationID>K602</ModificationID>
+      </ExperimentalCondition>
+      <ExperimentalCondition name ="Heavy">
+        <ModificationID>K080</ModificationID>
+      </ExperimentalCondition>
+    </ExperimentalSet>
+    <ExperimentalSet name="NeuCode Triplex" isDefault="True">
+      <ExperimentalCondition name ="Light">
+        <ModificationID>K602</ModificationID>
+      </ExperimentalCondition>
+      <ExperimentalCondition name ="Medium">
+        <ModificationID>K341</ModificationID>
+      </ExperimentalCondition>
+      <ExperimentalCondition name ="Heavy">
+        <ModificationID>K080</ModificationID>
+      </ExperimentalCondition>
+    </ExperimentalSet>
+    <ExperimentalSet name="SILAC Duplex" isDefault="True">
+      <ExperimentalCondition name ="Light" />
+      <ExperimentalCondition name ="Heavy">
+        <ModificationID>K602</ModificationID>
+      </ExperimentalCondition>
+    </ExperimentalSet>
+    <ExperimentalSet name="SILAC Triplex" isDefault="True">
+      <ExperimentalCondition name ="Light" />
+      <ExperimentalCondition name ="Medium">
+        <ModificationID>K040</ModificationID>
+      </ExperimentalCondition>
+      <ExperimentalCondition name ="Heavy">
+        <ModificationID>K602</ModificationID>
+      </ExperimentalCondition>
+    </ExperimentalSet>
+  </ExperimentalSets>
 </NeuQuantModifications>

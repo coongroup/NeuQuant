@@ -29,7 +29,8 @@
         private void InitializeComponent()
         {
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.isotopologueListBox = new System.Windows.Forms.ListBox();
+            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.experimentsListBox = new System.Windows.Forms.ListBox();
             this.button1 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
             this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
@@ -44,7 +45,6 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.label1 = new System.Windows.Forms.Label();
             this.modListBox = new System.Windows.Forms.ListBox();
-            this.textBox1 = new System.Windows.Forms.TextBox();
             this.groupBox2.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -55,7 +55,7 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox2.Controls.Add(this.textBox1);
-            this.groupBox2.Controls.Add(this.isotopologueListBox);
+            this.groupBox2.Controls.Add(this.experimentsListBox);
             this.groupBox2.Controls.Add(this.button1);
             this.groupBox2.Controls.Add(this.button3);
             this.groupBox2.Controls.Add(this.flowLayoutPanel2);
@@ -66,16 +66,24 @@
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Quantitative Channels";
             // 
-            // isotopologueListBox
+            // textBox1
             // 
-            this.isotopologueListBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.textBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.textBox1.Location = new System.Drawing.Point(72, 377);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(120, 20);
+            this.textBox1.TabIndex = 22;
+            // 
+            // experimentsListBox
+            // 
+            this.experimentsListBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
-            this.isotopologueListBox.FormattingEnabled = true;
-            this.isotopologueListBox.Location = new System.Drawing.Point(6, 19);
-            this.isotopologueListBox.Name = "isotopologueListBox";
-            this.isotopologueListBox.Size = new System.Drawing.Size(186, 355);
-            this.isotopologueListBox.TabIndex = 21;
-            this.isotopologueListBox.SelectedIndexChanged += new System.EventHandler(this.isotopologueListBox_SelectedIndexChanged);
+            this.experimentsListBox.FormattingEnabled = true;
+            this.experimentsListBox.Location = new System.Drawing.Point(6, 19);
+            this.experimentsListBox.Name = "experimentsListBox";
+            this.experimentsListBox.Size = new System.Drawing.Size(186, 355);
+            this.experimentsListBox.TabIndex = 21;
+            this.experimentsListBox.SelectedIndexChanged += new System.EventHandler(this.isotopologueListBox_SelectedIndexChanged);
             // 
             // button1
             // 
@@ -248,14 +256,7 @@
             this.modListBox.TabIndex = 20;
             this.modListBox.SelectedIndexChanged += new System.EventHandler(this.modListBox_SelectedIndexChanged);
             this.modListBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.modListBox_KeyDown);
-            // 
-            // textBox1
-            // 
-            this.textBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.textBox1.Location = new System.Drawing.Point(72, 377);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(120, 20);
-            this.textBox1.TabIndex = 22;
+            this.modListBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.modListBox_MouseDown);
             // 
             // QuantiativeLabelManagerForm
             // 
@@ -292,7 +293,7 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.ListBox modListBox;
-        private System.Windows.Forms.ListBox isotopologueListBox;
+        private System.Windows.Forms.ListBox experimentsListBox;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox textBox1;
     }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using CSMSL.Analysis.ExperimentalDesign;
 using CSMSL.Proteomics;
 
 namespace NeuQuant
@@ -9,34 +10,23 @@ namespace NeuQuant
     {
         public string Name { get; private set; }
         public string Description { get; private set; }
-        public HashSet<CSMSL.Proteomics.Modification> Modifications { get; private set; }
+      
         public long ID { get; internal set; }
 
-        public int NumberOfModifications { get { return Modifications.Count;} }
+        public ExperimentalCondition Condition { get; private set; }
 
-        public NeuQuantSample(string name, string description)
+        public int NumberOfModifications { get { return Condition.Count; } }
+
+        public NeuQuantSample(string name, string description, ExperimentalCondition condition)
         {
             Name = name;
             Description = description;
-            Modifications = new HashSet<CSMSL.Proteomics.Modification>();
-        }
-
-        public void AddModification(CSMSL.Proteomics.Modification modification)
-        {
-            if (Modifications.Add(modification))
-            {
-
-            }
+            Condition = condition;
         }
 
         public override string ToString()
         {
             return Name;
-        }
-
-        public string GetModificationsString()
-        {
-            return string.Join(" | ", Modifications.Select(m => m.Name).ToArray());
         }
 
         public override int GetHashCode()

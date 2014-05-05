@@ -92,18 +92,13 @@ namespace NeuQuant
         /// The number of clusters
         /// </summary>
         public int NumberOfClusters { get { return Clusters.Length; } }
-        
+
+        private Dictionary<Peptide, NeuQuantSample> channelsToSamples; 
+
         public NeuQuantPeptide()
         {
             IdentifiedChargeStates = new HashSet<int>();
             PeptideSpectrumMatches = new List<PeptideSpectrumMatch>();
-            QuantifiableChannels = new SortedList<double, Peptide>();
-        }
-
-        public NeuQuantPeptide(PeptideSpectrumMatch psm)
-            : this()
-        {
-            AddPeptideSpectrumMatch(psm);
         }
         
         /// <summary>
@@ -111,8 +106,14 @@ namespace NeuQuant
         /// </summary>
         /// <param name="psm">The psm to add to this peptide</param>
         /// <returns>True if the psm was added, false otherwise</returns>
-        public bool AddPeptideSpectrumMatch(PeptideSpectrumMatch psm)
+        public bool AddPeptideSpectrumMatch(PeptideSpectrumMatch psm, IList<NeuQuantSample> samples)
         {
+            if (QuantifiableChannels == null)
+                QuantifiableChannels = new SortedList<double, Peptide>(samples.Count);
+
+            if(channelsToSamples == null)
+                channelsToSamples = new Dictionary<Peptide, NeuQuantSample>(samples.Count);
+
             if (Peptide != null && !Peptide.Equals(psm.Peptide))
                 return false;
             
@@ -124,7 +125,7 @@ namespace NeuQuant
             if (PeptideSpectrumMatches.Count == 1)
             {
                 Peptide = psm.Peptide;
-                SetQuantChannels(Peptide);
+                SetQuantChannels(Peptide, samples);
             }
 
             // Find the best PSM
@@ -159,16 +160,31 @@ namespace NeuQuant
             return true;
         }
 
-        private void SetQuantChannels(Peptide peptide)
+        private void SetQuantChannels(Peptide peptide, IEnumerable<NeuQuantSample> samples)
         {
-            // Generate each isotopologue from the peptide and add it to the list
-            foreach (var isotopologue in peptide.GenerateIsotopologues())
+            foreach (NeuQuantSample sample in samples)
             {
-                QuantifiableChannels.Add(isotopologue.MonoisotopicMass, isotopologue);
+                Peptide channel = new Peptide(peptide, true);
+                foreach (Modification mod in sample.Condition)
+                {
+                    channel.SetModification(mod);
+                }
+
+                if (!QuantifiableChannels.ContainsKey(channel.MonoisotopicMass))
+                {
+                    QuantifiableChannels.Add(channel.MonoisotopicMass, channel);
+                    channelsToSamples.Add(channel, sample);
+                }
             }
 
-            // No quantitative labels
-            if (QuantifiableChannels.Count == 0)
+            // Generate each isotopologue from the peptide and add it to the list
+            //foreach (var isotopologue in peptide.GenerateIsotopologues())
+            //{
+            //    QuantifiableChannels.Add(isotopologue.MonoisotopicMass, isotopologue);
+            //}
+
+            // No quantitative labels, i.e. only one isoform for this peptide
+            if (QuantifiableChannels.Count == 1)
             {
                 SmallestTheorecticalMassSpacing = 0;
                 return;
@@ -227,9 +243,9 @@ namespace NeuQuant
             return Peptide.ToString();
         }
 
-        public NeuQuantQuantitation Quantify(IList<NeuQuantSample> _samples, bool noiseBandCap, double noiseLevel)
+        public NeuQuantQuantitation Quantify(bool noiseBandCap, double noiseLevel)
         {
-            NeuQuantQuantitation quant = new NeuQuantQuantitation(this, _samples.Count);
+            NeuQuantQuantitation quant = new NeuQuantQuantitation(this, channelsToSamples.Count);
 
             foreach (var featureSet in FeatureSets)
             {
@@ -238,31 +254,14 @@ namespace NeuQuant
                 {
                     var channel = channelQuant.Key;
                     double quantitationValue = channelQuant.Value;
-                    NeuQuantSample sample = GetSample(channel, _samples);
+
+                    NeuQuantSample sample = channelsToSamples[channel];
                     quant.AddQuantitation(sample, quantitationValue);
                 }
             }
 
             return quant;
         }
-
-        private NeuQuantSample GetSample(Peptide peptide, IEnumerable<NeuQuantSample> possibleSamples)
-        {
-            foreach (NeuQuantSample sample in possibleSamples)
-            {
-                bool allThere = true;
-                foreach (var mod in sample.Modifications)
-                {
-                    if (!peptide.Contains(mod))
-                    {
-                        allThere = false;
-                        break;
-                    }
-                }
-                if (allThere)
-                    return sample;
-            }
-            return null;
-        }
+       
     }
 }

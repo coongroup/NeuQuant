@@ -45,7 +45,7 @@ namespace NeuQuant.Processing
             NqFile = nqFile;
         }
 
-        public Processor(NeuQuantFile nqFile, string name = "Analysis", int isotopesToQuantify = 3, double minRtDelta = 0.25, double maxRtDelta = 0.25, 
+        public Processor(NeuQuantFile nqFile, string name = "Default", int isotopesToQuantify = 3, double minRtDelta = 0.25, double maxRtDelta = 0.25, 
             double resolution = 240000, double resolutionAt = 400, double quantAtPeakHeight = 10, bool checkIsotopicDistribution = true,
             bool noiseBandCap = true, double lowerSpacingPercent = 0.25, double upperSpacingPercent = 0.15)
         {
@@ -54,7 +54,7 @@ namespace NeuQuant.Processing
             MinimumRtDelta = minRtDelta;
             MaximumRtDelta = maxRtDelta;
             MS2Tolerance = new Tolerance(ToleranceType.PPM, 10);
-            MinimumResolution = resolution/2 + 1;
+            MinimumResolution = resolution;
 
             NoiseBandCap = noiseBandCap;
             UseIsotopicDistribution = checkIsotopicDistribution;
@@ -95,14 +95,15 @@ namespace NeuQuant.Processing
                 throw new ArgumentNullException("No NeuQuant File Specified");
             
             IsOpen = NqFile.Open();
-
-            // Save this analysis
-            ID = SaveAnalysisParameters(Name);
-
-            _samples = NqFile.GetSamples().ToList();
         }
 
-        public long SaveAnalysisParameters(string analysisName = "")
+        public long SaveAnalysis()
+        {
+            ID = SaveAnalysisParameters(Name);
+            return ID;
+        }
+
+        private long SaveAnalysisParameters(string analysisName = "")
         {
             NqFile.BeginTransaction();
 
@@ -118,8 +119,7 @@ namespace NeuQuant.Processing
 
             return analysisID;
         }
-
-
+        
         private static readonly Dictionary<Type, Func<string, object>> Converter = new Dictionary<Type, Func<string, object>>()
         {
             {typeof (Int32), s => Int32.Parse(s)},

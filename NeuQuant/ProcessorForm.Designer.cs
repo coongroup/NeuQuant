@@ -37,8 +37,8 @@
             this.isotopicDistributionCheck = new System.Windows.Forms.CheckBox();
             this.label3 = new System.Windows.Forms.Label();
             this.numericUpDown2 = new System.Windows.Forms.NumericUpDown();
-            this.isFusionCB = new System.Windows.Forms.CheckBox();
             this.label4 = new System.Windows.Forms.Label();
+            this.checkedListBox1 = new System.Windows.Forms.CheckedListBox();
             this.numericUpDown3 = new System.Windows.Forms.NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
@@ -112,7 +112,7 @@
             // noiseBandCapCB
             // 
             this.noiseBandCapCB.AutoSize = true;
-            this.noiseBandCapCB.Location = new System.Drawing.Point(15, 131);
+            this.noiseBandCapCB.Location = new System.Drawing.Point(15, 181);
             this.noiseBandCapCB.Name = "noiseBandCapCB";
             this.noiseBandCapCB.Size = new System.Drawing.Size(103, 17);
             this.noiseBandCapCB.TabIndex = 5;
@@ -124,7 +124,7 @@
             this.isotopicDistributionCheck.AutoSize = true;
             this.isotopicDistributionCheck.Checked = true;
             this.isotopicDistributionCheck.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.isotopicDistributionCheck.Location = new System.Drawing.Point(15, 154);
+            this.isotopicDistributionCheck.Location = new System.Drawing.Point(15, 204);
             this.isotopicDistributionCheck.Name = "isotopicDistributionCheck";
             this.isotopicDistributionCheck.Size = new System.Drawing.Size(152, 17);
             this.isotopicDistributionCheck.TabIndex = 6;
@@ -147,24 +147,13 @@
             this.numericUpDown2.DecimalPlaces = 2;
             this.numericUpDown2.Location = new System.Drawing.Point(152, 75);
             this.numericUpDown2.Name = "numericUpDown2";
-            this.numericUpDown2.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDown2.Size = new System.Drawing.Size(47, 20);
             this.numericUpDown2.TabIndex = 8;
             this.numericUpDown2.Value = new decimal(new int[] {
             75,
             0,
             0,
             131072});
-            // 
-            // isFusionCB
-            // 
-            this.isFusionCB.AutoSize = true;
-            this.isFusionCB.Location = new System.Drawing.Point(15, 177);
-            this.isFusionCB.Name = "isFusionCB";
-            this.isFusionCB.Size = new System.Drawing.Size(100, 17);
-            this.isFusionCB.TabIndex = 9;
-            this.isFusionCB.Text = "Is Fusion Data?";
-            this.isFusionCB.UseVisualStyleBackColor = true;
-            this.isFusionCB.CheckedChanged += new System.EventHandler(this.isFusionCB_CheckedChanged);
             // 
             // label4
             // 
@@ -175,24 +164,30 @@
             this.label4.TabIndex = 10;
             this.label4.Text = "Minimum Resolution";
             // 
+            // checkedListBox1
+            // 
+            this.checkedListBox1.CheckOnClick = true;
+            this.checkedListBox1.FormattingEnabled = true;
+            this.checkedListBox1.Location = new System.Drawing.Point(152, 101);
+            this.checkedListBox1.Name = "checkedListBox1";
+            this.checkedListBox1.Size = new System.Drawing.Size(120, 49);
+            this.checkedListBox1.TabIndex = 12;
+            this.checkedListBox1.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.checkedListBox1_ItemCheck);
+            // 
             // numericUpDown3
             // 
             this.numericUpDown3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.numericUpDown3.Location = new System.Drawing.Point(152, 101);
-            this.numericUpDown3.Maximum = new decimal(new int[] {
-            1410065408,
-            2,
-            0,
-            0});
+            this.numericUpDown3.DecimalPlaces = 2;
+            this.numericUpDown3.Location = new System.Drawing.Point(225, 75);
             this.numericUpDown3.Name = "numericUpDown3";
-            this.numericUpDown3.Size = new System.Drawing.Size(120, 20);
-            this.numericUpDown3.TabIndex = 11;
+            this.numericUpDown3.Size = new System.Drawing.Size(47, 20);
+            this.numericUpDown3.TabIndex = 13;
             this.numericUpDown3.Value = new decimal(new int[] {
-            240000,
+            75,
             0,
             0,
-            0});
+            131072});
             // 
             // ProcessorForm
             // 
@@ -200,8 +195,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 262);
             this.Controls.Add(this.numericUpDown3);
+            this.Controls.Add(this.checkedListBox1);
             this.Controls.Add(this.label4);
-            this.Controls.Add(this.isFusionCB);
             this.Controls.Add(this.numericUpDown2);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.isotopicDistributionCheck);
@@ -234,8 +229,8 @@
         private System.Windows.Forms.CheckBox isotopicDistributionCheck;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.NumericUpDown numericUpDown2;
-        private System.Windows.Forms.CheckBox isFusionCB;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.CheckedListBox checkedListBox1;
         private System.Windows.Forms.NumericUpDown numericUpDown3;
     }
 }

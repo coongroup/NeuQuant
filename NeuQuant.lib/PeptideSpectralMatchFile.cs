@@ -1,4 +1,5 @@
-﻿using CSMSL.IO.Thermo;
+﻿using CSMSL.Analysis.ExperimentalDesign;
+using CSMSL.IO.Thermo;
 using CSMSL.Proteomics;
 using NeuQuant.IO;
 using System;
@@ -19,6 +20,8 @@ namespace NeuQuant
         public HashSet<CSMSL.Proteomics.Modification> FixedModifications;
         public Dictionary<string, CSMSL.Proteomics.Modification> VariableModifications;
         public Dictionary<string, NeuQuantSample> Samples;
+
+        public ExperimentalSet Experiment;
 
         public int PSMCount { get; protected set; }
 
@@ -55,26 +58,15 @@ namespace NeuQuant
             }           
         }
 
-        public void SetChannel(string sampleName, string description, params CSMSL.Proteomics.Modification[] modifications)
+        public void SetChannel(string sampleName, string description, ExperimentalCondition condition)
         {
-            if (Samples.ContainsKey(sampleName))
+            if (Samples.ContainsKey(condition.Name))
             {
                 throw new ArgumentException("Cannot add two channels with the same name, they must be unique");
             }
 
-            NeuQuantSample sample = new NeuQuantSample(sampleName, description);
-            foreach (CSMSL.Proteomics.Modification modification in modifications)
-            {
-                // TODO add check to make sure the modification was previously added to the fixed/variable mods, will be challenging with isotopologues
-
-                sample.AddModification(modification);
-            }
-            Samples.Add(sample.Name, sample);
-        }
-
-        public void SetChannel(string sampleName, string description, CSMSL.Proteomics.Modification modification)
-        {
-            SetChannel(sampleName, description, new[] {modification});
+            NeuQuantSample sample = new NeuQuantSample(sampleName, description, condition);
+            Samples.Add(condition.Name, sample);
         }
         
         public abstract void Open();
@@ -84,6 +76,10 @@ namespace NeuQuant
         {          
            
         }
-
+        
+        public void SetExperimentalDesign(ExperimentalSet experiment)
+        {
+            Experiment = experiment;
+        }
     }
 }

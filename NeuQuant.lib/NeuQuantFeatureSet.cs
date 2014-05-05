@@ -196,15 +196,15 @@ namespace NeuQuant
                 if(spacing < 0)
                     break;
             }
+            int minIndex = Math.Max(i - 1, 0);
 
-            int minIndex = i;
             for (i = minIndex+1; i < _features.Count; i++)
             {
                 double spacing = maxRT - _features[i].RetentionTime;
                 if (spacing < 0)
                     break;
             }
-            int maxIndex = i - 1;
+            int maxIndex = Math.Min(i - 1, _features.Count - 1);
             
             return new Range<int>(minIndex, maxIndex);
             

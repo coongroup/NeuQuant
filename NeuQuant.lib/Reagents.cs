@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using CSMSL.Analysis.ExperimentalDesign;
 using CSMSL.Proteomics;
 using CSMSL;
 using System.Collections.Generic;
@@ -14,14 +15,14 @@ namespace NeuQuant
     public static class Reagents
     {
         private static readonly Dictionary<string, NeuQuantModification> Modifications;
-        private static readonly Dictionary<string, Isotopologue> Isotopologues;
+        private static readonly Dictionary<string, ExperimentalSet> Experiments;
         
         private static readonly string DeafaultModificationPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"NeuQuant\Modifications.xml");
 
         static Reagents()
         {
             Modifications = new Dictionary<string, NeuQuantModification>();
-            Isotopologues = new Dictionary<string, Isotopologue>();
+            Experiments = new Dictionary<string, ExperimentalSet>();
           
             // Load the default modification file
             Load();
@@ -32,9 +33,9 @@ namespace NeuQuant
             return Modifications.Values;
         }
 
-        public static IEnumerable<Isotopologue> GetAllIsotopologue()
+        public static IEnumerable<ExperimentalSet> GetAllExperiments()
         {
-            return Isotopologues.Values;
+            return Experiments.Values;
         }
 
         public static NeuQuantModification GetModification(string name)
@@ -63,26 +64,26 @@ namespace NeuQuant
             return true;
         }
 
-        public static Isotopologue GetIsotopologue(string name)
+        public static ExperimentalSet GetExperiment(string name)
         {
-            return Isotopologues[name];
+            return Experiments[name];
         }
 
-        public static void AddIsotopologue(Isotopologue isotopologue)
+        public static void AddExperiment(ExperimentalSet experiment)
         {
             // Add Modification
-            Isotopologues[isotopologue.Name] = isotopologue;
+            Experiments[experiment.Name] = experiment;
             
             // Alert others
-            OnIsotopologuesChanged();
+            OnExperimentsChanged();
         }
 
-        public static bool RemoveIsotopologue(string name)
+        public static bool RemoveExperiment(string name)
         {
-            if (!Isotopologues.Remove(name))
+            if (!Experiments.Remove(name))
                 return false;
 
-            OnIsotopologuesChanged();
+            OnExperimentsChanged();
             return true;
         }
 
@@ -133,28 +134,28 @@ namespace NeuQuant
                 }
                 OnModificationsChanged(false);
 
-                foreach (XmlNode node in modsXml.SelectNodes("//Isotopologues/Isotopologue"))
+                foreach (XmlNode node in modsXml.SelectNodes("//ExperimentalSets/ExperimentalSet"))
                 {
                     string name = node.Attributes["name"].Value;
                     //bool isDefault = bool.Parse(node.Attributes["isDefault"].Value);
-                    ModificationSites sites = ModificationSites.None;
-                    foreach (XmlNode siteNode in node.SelectNodes("ModificationSite"))
-                    {
-                        string modSite = siteNode.InnerText;
-                        var site = (ModificationSites) Enum.Parse(typeof (ModificationSites), modSite);
-                        sites |= site;
-                    }
-                    var isotopologue = new Isotopologue(name, sites);
 
-                    foreach (XmlNode idNode in node.SelectNodes("ModificationID"))
+                    ExperimentalSet experiment = new ExperimentalSet(name);
+                    
+                    foreach (XmlNode conditionNode in node.SelectNodes("ExperimentalCondition"))
                     {
-                        string modID = idNode.InnerText;
-                        isotopologue.AddModification(Modifications[modID]);
+                        string conditionName = conditionNode.Attributes["name"].Value;
+                        ExperimentalCondition condition = new ExperimentalCondition(conditionName);
+                        foreach (XmlNode modNode in conditionNode.SelectNodes("ModificationID"))
+                        {
+                            string modID = modNode.InnerText;
+                            condition.AddModification(Modifications[modID]);
+                        }
+                        experiment.Add(condition);
                     }
 
-                    Isotopologues.Add(name, isotopologue);
+                    Experiments.Add(name, experiment);
                 }
-                OnIsotopologuesChanged(false);
+                OnExperimentsChanged(false);
             }
             catch (XmlException)
             {
@@ -175,10 +176,7 @@ namespace NeuQuant
         /// </summary>
         public static void SaveTo(string filePath)
         {
-            var xmlWriterSettings = new XmlWriterSettings();
-            xmlWriterSettings.Indent = true;
-      
-            using (XmlWriter writer = XmlWriter.Create(filePath, xmlWriterSettings))
+            using (XmlWriter writer = XmlWriter.Create(filePath, new XmlWriterSettings { Indent = true }))
             {
                 writer.WriteStartDocument();
                 writer.WriteStartElement("NeuQuantModifications");
@@ -197,23 +195,26 @@ namespace NeuQuant
                     writer.WriteEndElement();
                 }
                 writer.WriteEndElement();
-                writer.WriteStartElement("Isotopologues");
-                foreach (Isotopologue isotopologue in Isotopologues.Values)
+                writer.WriteStartElement("ExperimentalSets");
+                foreach (ExperimentalSet experiment in Experiments.Values)
                 {
-                    writer.WriteStartElement("Isotopologue");
-                    writer.WriteAttributeString("name", isotopologue.Name);
-                    foreach (ModificationSites site in isotopologue.Sites.GetActiveSites())
+                    writer.WriteStartElement("ExperimentalSet");
+                    writer.WriteAttributeString("name", experiment.Name);
+
+                    foreach (ExperimentalCondition condition in experiment)
                     {
-                        writer.WriteElementString("ModificationSite", site.ToString());
+                        writer.WriteStartElement("ExperimentalCondition");
+                        writer.WriteAttributeString("name", condition.Name);
+                        foreach (Modification mod in condition)
+                        {
+                            writer.WriteElementString("ModificationID", mod.Name);
+                        }
+                        writer.WriteEndElement(); // end ExperimentalCondition
                     }
-                    foreach (CSMSL.Proteomics.Modification mod in isotopologue)
-                    {
-                        writer.WriteElementString("ModificationID", mod.Name);
-                    }
-                    writer.WriteEndElement();
+                    writer.WriteEndElement();  // end ExperimentalSet
                 }
-                writer.WriteEndElement();
-                writer.WriteEndElement();
+                writer.WriteEndElement(); // end EpxerimentalSets
+                writer.WriteEndElement(); // end NeuQuantModifications
                 writer.WriteEndDocument();
             }
         }
@@ -221,7 +222,7 @@ namespace NeuQuant
         public static void RestoreDefaults()
         {
             Modifications.Clear();
-            Isotopologues.Clear();
+            Experiments.Clear();
             Directory.CreateDirectory(Path.GetDirectoryName(DeafaultModificationPath));
             File.Copy(@"Resources/DefaultModifications.xml", DeafaultModificationPath, true);
             Load();
@@ -240,13 +241,13 @@ namespace NeuQuant
             }
         }
 
-        private static void OnIsotopologuesChanged(bool saveToDisk = true)
+        private static void OnExperimentsChanged(bool saveToDisk = true)
         {
             // Flush to disk
             if (saveToDisk)
                 Save();
 
-            var handler = IsotopologuesChanged;
+            var handler = ExperimentsChanged;
             if (handler != null)
             {
                 handler(null, EventArgs.Empty);
@@ -254,7 +255,7 @@ namespace NeuQuant
         }
 
         public static event EventHandler ModificationsChanged;
-        public static event EventHandler IsotopologuesChanged;
+        public static event EventHandler ExperimentsChanged;
     }
 }
 

@@ -170,9 +170,10 @@ namespace NeuQuant.IO
                 // Samples
                 sql = @"CREATE TABLE IF NOT EXISTS samples (
                         id INTEGER PRIMARY KEY ASC, 
-                        name TEXT,
-                        description TEXT,
-                        UNIQUE (name) ON CONFLICT IGNORE)";
+                        conditionName TEXT,
+                        sampleName TEXT,
+                        sampleDescription TEXT,
+                        UNIQUE (sampleName) ON CONFLICT IGNORE)";
                 new SQLiteCommand(sql, conn).ExecuteNonQuery();
 
                 // Samples_to_mods
