@@ -31,9 +31,9 @@
             this.panel1 = new System.Windows.Forms.Panel();
             this.listBox1 = new System.Windows.Forms.ListBox();
             this.label3 = new System.Windows.Forms.Label();
-            this.removeButton = new System.Windows.Forms.Button();
             this.NameTextBox = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
+            this.removeButton = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -50,7 +50,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(205, 108);
+            this.panel1.Size = new System.Drawing.Size(205, 106);
             this.panel1.TabIndex = 0;
             this.panel1.DragDrop += new System.Windows.Forms.DragEventHandler(this.panel1_DragDrop);
             this.panel1.DragEnter += new System.Windows.Forms.DragEventHandler(this.panel1_DragEnter);
@@ -75,23 +75,6 @@
             this.label3.TabIndex = 8;
             this.label3.Text = "Mods";
             // 
-            // removeButton
-            // 
-            this.removeButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.removeButton.BackColor = System.Drawing.SystemColors.ControlLight;
-            this.removeButton.FlatAppearance.BorderSize = 0;
-            this.removeButton.FlatAppearance.MouseDownBackColor = System.Drawing.SystemColors.ControlLight;
-            this.removeButton.FlatAppearance.MouseOverBackColor = System.Drawing.SystemColors.ControlLight;
-            this.removeButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.removeButton.Image = global::NeuQuant.Properties.Resources.close16;
-            this.removeButton.Location = new System.Drawing.Point(184, 2);
-            this.removeButton.MaximumSize = new System.Drawing.Size(16, 16);
-            this.removeButton.Name = "removeButton";
-            this.removeButton.Size = new System.Drawing.Size(16, 16);
-            this.removeButton.TabIndex = 5;
-            this.removeButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
-            this.removeButton.UseVisualStyleBackColor = false;
-            // 
             // NameTextBox
             // 
             this.NameTextBox.Location = new System.Drawing.Point(58, 6);
@@ -109,6 +92,23 @@
             this.label1.TabIndex = 0;
             this.label1.Text = "Name";
             // 
+            // removeButton
+            // 
+            this.removeButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.removeButton.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.removeButton.FlatAppearance.BorderSize = 0;
+            this.removeButton.FlatAppearance.MouseDownBackColor = System.Drawing.SystemColors.ControlLight;
+            this.removeButton.FlatAppearance.MouseOverBackColor = System.Drawing.SystemColors.ControlLight;
+            this.removeButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.removeButton.Image = global::NeuQuant.Properties.Resources.close16;
+            this.removeButton.Location = new System.Drawing.Point(186, 0);
+            this.removeButton.MaximumSize = new System.Drawing.Size(16, 16);
+            this.removeButton.Name = "removeButton";
+            this.removeButton.Size = new System.Drawing.Size(16, 16);
+            this.removeButton.TabIndex = 5;
+            this.removeButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.removeButton.UseVisualStyleBackColor = false;
+            // 
             // QuantiativeLabelControl
             // 
             this.AllowDrop = true;
@@ -116,7 +116,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.panel1);
             this.Name = "QuantiativeLabelControl";
-            this.Size = new System.Drawing.Size(205, 108);
+            this.Size = new System.Drawing.Size(205, 106);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             this.ResumeLayout(false);

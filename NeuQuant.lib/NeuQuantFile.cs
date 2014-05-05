@@ -41,31 +41,17 @@ namespace NeuQuant.IO
 
         private SQLiteCommand _selectPeptide;
 
-        private Dictionary<long, CSMSL.Proteomics.Modification> _modifications;
+        private Dictionary<long, Modification> _modifications;
 
-        private Dictionary<long, CSMSL.Proteomics.Modification> Modifications
+        private Dictionary<long, Modification> Modifications
         {
-            get
-            {
-                if (_modifications == null)
-                {
-                    _modifications = GetModifications();
-                }
-                return _modifications;
-            }
+            get { return _modifications ?? (_modifications = GetModifications()); }
         }
 
         private List<NeuQuantSample> _samples;
         public List<NeuQuantSample> Samples
         {
-            get
-            {
-                if (_samples == null)
-                {
-                    _samples = GetSamples().ToList();
-                }
-                return _samples;
-            }
+            get { return _samples ?? (_samples = GetSamples().ToList()); }
         }
 
         public NeuQuantFile(string filePath)
@@ -85,8 +71,7 @@ namespace NeuQuant.IO
             _insertAnalysis = new SQLiteCommand(@"INSERT INTO analyses (createDate, name) VALUES (DateTime('now'), @name)", _dbConnection);
             _insertAnalysisParameter = new SQLiteCommand(@"INSERT INTO analysisParameters (analysisID, key, value) VALUES (@analysisID, @key, @value)", _dbConnection);
             _insertSample = new SQLiteCommand(@"INSERT INTO samples (conditionName, sampleName, sampleDescription) VALUES (@conditionName, @sampleName, @sampleDescription)", _dbConnection);
-
-
+            
             _insertQuantitation = new SQLiteCommand(@"INSERT INTO quantitation (analysisID, peptideID, sampleID, quantitation) VALUES (@analysisID, @peptideID, @sampleID, @quantitation)", _dbConnection);
         }
 

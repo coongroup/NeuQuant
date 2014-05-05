@@ -39,12 +39,11 @@
             this.siteListBox = new System.Windows.Forms.CheckedListBox();
             this.formulaBox = new System.Windows.Forms.TextBox();
             this.label6 = new System.Windows.Forms.Label();
-            this.aminoAcidRadioButton = new System.Windows.Forms.RadioButton();
-            this.tagRadioButton = new System.Windows.Forms.RadioButton();
-            this.label2 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.label1 = new System.Windows.Forms.Label();
             this.modListBox = new System.Windows.Forms.ListBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.textBox2 = new System.Windows.Forms.TextBox();
             this.groupBox2.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -154,20 +153,21 @@
             this.siteListBox.CheckOnClick = true;
             this.siteListBox.ColumnWidth = 60;
             this.siteListBox.FormattingEnabled = true;
-            this.siteListBox.Location = new System.Drawing.Point(9, 244);
+            this.siteListBox.Location = new System.Drawing.Point(9, 229);
             this.siteListBox.MultiColumn = true;
             this.siteListBox.Name = "siteListBox";
-            this.siteListBox.Size = new System.Drawing.Size(250, 124);
+            this.siteListBox.Size = new System.Drawing.Size(250, 139);
             this.siteListBox.TabIndex = 2;
             this.siteListBox.UseTabStops = false;
             // 
             // formulaBox
             // 
             this.formulaBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.formulaBox.Location = new System.Drawing.Point(60, 216);
+            this.formulaBox.Location = new System.Drawing.Point(75, 180);
             this.formulaBox.Name = "formulaBox";
-            this.formulaBox.Size = new System.Drawing.Size(199, 20);
+            this.formulaBox.Size = new System.Drawing.Size(183, 20);
             this.formulaBox.TabIndex = 8;
+            this.formulaBox.TextChanged += new System.EventHandler(this.formulaBox_TextChanged);
             // 
             // label6
             // 
@@ -177,54 +177,16 @@
             this.label6.Size = new System.Drawing.Size(0, 13);
             this.label6.TabIndex = 9;
             // 
-            // aminoAcidRadioButton
-            // 
-            this.aminoAcidRadioButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.aminoAcidRadioButton.AutoSize = true;
-            this.aminoAcidRadioButton.BackColor = System.Drawing.Color.Transparent;
-            this.aminoAcidRadioButton.Location = new System.Drawing.Point(83, 193);
-            this.aminoAcidRadioButton.Name = "aminoAcidRadioButton";
-            this.aminoAcidRadioButton.Size = new System.Drawing.Size(78, 17);
-            this.aminoAcidRadioButton.TabIndex = 17;
-            this.aminoAcidRadioButton.TabStop = true;
-            this.aminoAcidRadioButton.Text = "Amino Acid";
-            this.aminoAcidRadioButton.UseVisualStyleBackColor = false;
-            // 
-            // tagRadioButton
-            // 
-            this.tagRadioButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.tagRadioButton.AutoSize = true;
-            this.tagRadioButton.BackColor = System.Drawing.Color.Transparent;
-            this.tagRadioButton.Location = new System.Drawing.Point(167, 193);
-            this.tagRadioButton.Name = "tagRadioButton";
-            this.tagRadioButton.Size = new System.Drawing.Size(44, 17);
-            this.tagRadioButton.TabIndex = 18;
-            this.tagRadioButton.TabStop = true;
-            this.tagRadioButton.Text = "Tag";
-            this.tagRadioButton.UseVisualStyleBackColor = false;
-            // 
-            // label2
-            // 
-            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.label2.AutoSize = true;
-            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(10, 193);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(67, 15);
-            this.label2.TabIndex = 19;
-            this.label2.Text = "Label Type";
-            // 
             // groupBox1
             // 
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
+            this.groupBox1.Controls.Add(this.textBox2);
+            this.groupBox1.Controls.Add(this.label2);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Controls.Add(this.createChannelButton);
             this.groupBox1.Controls.Add(this.modNameBox);
             this.groupBox1.Controls.Add(this.modListBox);
-            this.groupBox1.Controls.Add(this.label2);
-            this.groupBox1.Controls.Add(this.tagRadioButton);
-            this.groupBox1.Controls.Add(this.aminoAcidRadioButton);
             this.groupBox1.Controls.Add(this.label6);
             this.groupBox1.Controls.Add(this.formulaBox);
             this.groupBox1.Controls.Add(this.siteListBox);
@@ -239,7 +201,7 @@
             // 
             this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(10, 219);
+            this.label1.Location = new System.Drawing.Point(9, 183);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(44, 13);
             this.label1.TabIndex = 21;
@@ -252,11 +214,30 @@
             this.modListBox.FormattingEnabled = true;
             this.modListBox.Location = new System.Drawing.Point(9, 14);
             this.modListBox.Name = "modListBox";
-            this.modListBox.Size = new System.Drawing.Size(250, 173);
+            this.modListBox.Size = new System.Drawing.Size(250, 160);
             this.modListBox.TabIndex = 20;
             this.modListBox.SelectedIndexChanged += new System.EventHandler(this.modListBox_SelectedIndexChanged);
             this.modListBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.modListBox_KeyDown);
             this.modListBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.modListBox_MouseDown);
+            // 
+            // label2
+            // 
+            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(9, 207);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(60, 13);
+            this.label2.TabIndex = 22;
+            this.label2.Text = "Delta Mass";
+            // 
+            // textBox2
+            // 
+            this.textBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.textBox2.Location = new System.Drawing.Point(75, 204);
+            this.textBox2.Name = "textBox2";
+            this.textBox2.ReadOnly = true;
+            this.textBox2.Size = new System.Drawing.Size(183, 20);
+            this.textBox2.TabIndex = 24;
             // 
             // QuantiativeLabelManagerForm
             // 
@@ -288,13 +269,12 @@
         private System.Windows.Forms.CheckedListBox siteListBox;
         private System.Windows.Forms.TextBox formulaBox;
         private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.RadioButton aminoAcidRadioButton;
-        private System.Windows.Forms.RadioButton tagRadioButton;
-        private System.Windows.Forms.Label label2;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.ListBox modListBox;
         private System.Windows.Forms.ListBox experimentsListBox;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.TextBox textBox2;
     }
 }

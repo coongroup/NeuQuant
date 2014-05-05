@@ -85,7 +85,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="NeuQuantModification.cs" />
     <Compile Include="MessageEventArgs.cs" />
     <Compile Include="NeuQuantAnalysis.cs" />
     <Compile Include="NeuQuantFeature.cs" />

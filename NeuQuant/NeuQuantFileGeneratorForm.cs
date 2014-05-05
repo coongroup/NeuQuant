@@ -127,7 +127,7 @@ namespace NeuQuant
             }
 
             // Add other fixed modifications
-            foreach (var modification in checkedListBox1.CheckedItems.OfType<NeuQuantModification>())
+            foreach (var modification in checkedListBox1.CheckedItems.OfType<Modification>())
             {
                 psmFile.AddFixedModification(modification);
             }

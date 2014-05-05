@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using CSMSL.Analysis.ExperimentalDesign;
 using CSMSL.Proteomics;
-using System;
 using System.Windows.Forms;
 
 namespace NeuQuant
@@ -40,7 +39,10 @@ namespace NeuQuant
 
         private void panel1_DragDrop(object sender, DragEventArgs e)
         {
-            var mod = e.Data.GetData(typeof(NeuQuantModification)) as NeuQuantModification;
+
+
+            // Odd, but this answers it: http://stackoverflow.com/questions/2731425/c-sharp-drag-and-drop-e-data-getdata-using-a-base-class
+            var mod = e.Data.GetData(typeof(ChemicalFormulaModification));
             if (mod == null)
                 return;
 
@@ -53,7 +55,7 @@ namespace NeuQuant
             if (e.KeyCode != Keys.Delete)
                 return;
 
-            var mod = listBox1.SelectedItem as NeuQuantModification;
+            var mod = listBox1.SelectedItem;
             listBox1.Items.Remove(mod);
         }
 

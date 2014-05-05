@@ -34,7 +34,7 @@ namespace NeuQuant
 
         public static Color[] MasterColors = {Color.CornflowerBlue, Color.Sienna, Color.YellowGreen};
 
-        public static readonly BindingList<NeuQuantModification> CurrentModifications = new BindingList<NeuQuantModification>();
+        public static readonly BindingList<Modification> CurrentModifications = new BindingList<Modification>();
         public static readonly BindingList<ExperimentalSet> CurrentExperiments = new BindingList<ExperimentalSet>();
         public static readonly BindingList<NeuQuantPeptide> LoadedPeptides = new BindingList<NeuQuantPeptide>();
         public static BindingListView<NeuQuantPeptide> LoadedPeptidesView;
@@ -264,11 +264,12 @@ namespace NeuQuant
             channelsColumn.DataPropertyName = "NumberOfChannels";
             channelsColumn.HeaderText = "# Quantitative Channels";
             _peptidesForm.DataGridView.Columns.Add(channelsColumn);
-            
+
+            RegisterForm(_peptidesForm);
             LoadedPeptidesView = new BindingListView<NeuQuantPeptide>(LoadedPeptides);
             _peptidesForm.DataGridView.DataSource = LoadedPeptidesView;
 
-            RegisterForm(_peptidesForm);
+         
             _peptidesForm.Hide();
 
             // Link this two forms together so their events are reflected in both
@@ -1311,10 +1312,14 @@ namespace NeuQuant
             if (LoadedPeptidesView == null)
                 return;
 
-            string sequence = toolStripTextBox1.Text;
-            if (!string.IsNullOrEmpty(sequence) )
+            string sequence = toolStripTextBox1.Text.ToUpper();
+            if (!string.IsNullOrEmpty(sequence))
             {
                 LoadedPeptidesView.ApplyFilter(p => p.Sequence.Contains(sequence));
+            }
+            else
+            {
+                LoadedPeptidesView.RemoveFilter();
             }
         }
    

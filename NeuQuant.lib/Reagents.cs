@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Linq;
 using CSMSL.Analysis.ExperimentalDesign;
 using CSMSL.Proteomics;
 using CSMSL;
@@ -14,21 +15,21 @@ namespace NeuQuant
     /// </summary>
     public static class Reagents
     {
-        private static readonly Dictionary<string, NeuQuantModification> Modifications;
+        private static readonly Dictionary<string, Modification> Modifications;
         private static readonly Dictionary<string, ExperimentalSet> Experiments;
         
         private static readonly string DeafaultModificationPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"NeuQuant\Modifications.xml");
 
         static Reagents()
         {
-            Modifications = new Dictionary<string, NeuQuantModification>();
+            Modifications = new Dictionary<string, Modification>();
             Experiments = new Dictionary<string, ExperimentalSet>();
           
             // Load the default modification file
             Load();
         }
 
-        public static IEnumerable<NeuQuantModification> GetAllModifications()
+        public static IEnumerable<Modification> GetAllModifications()
         {
             return Modifications.Values;
         }
@@ -38,14 +39,14 @@ namespace NeuQuant
             return Experiments.Values;
         }
 
-        public static NeuQuantModification GetModification(string name)
+        public static Modification GetModification(string name)
         {
-            NeuQuantModification mod = null;
+            Modification mod = null;
             Modifications.TryGetValue(name, out mod);
             return mod;
         }
 
-        public static void AddModification(NeuQuantModification neuQuantModification)
+        public static void AddModification(Modification neuQuantModification)
         {
             // Add Modification
             Modifications[neuQuantModification.Name] = neuQuantModification;
@@ -117,8 +118,7 @@ namespace NeuQuant
                 foreach (XmlNode node in modsXml.SelectNodes("//Modifications/Modification"))
                 {
                     string name = node.Attributes["name"].Value;
-                    bool isDefault = bool.Parse(node.Attributes["isDefault"].Value);
-                    bool isAminoAcid = bool.Parse(node.Attributes["isAminoAcid"].Value);
+                   
                     string chemicalFormula = node.SelectSingleNode("ChemicalFormula").InnerText;
 
                     ModificationSites sites = ModificationSites.None;
@@ -129,7 +129,7 @@ namespace NeuQuant
                         sites |= site;
                     }
 
-                    var chemFormMod = new NeuQuantModification(chemicalFormula, name, sites, isAminoAcid, isDefault);
+                    var chemFormMod = new ChemicalFormulaModification(chemicalFormula, name, sites);
                     Modifications.Add(name, chemFormMod);
                 }
                 OnModificationsChanged(false);
@@ -181,12 +181,10 @@ namespace NeuQuant
                 writer.WriteStartDocument();
                 writer.WriteStartElement("NeuQuantModifications");
                 writer.WriteStartElement("Modifications");
-                foreach (NeuQuantModification mod in Modifications.Values)
+                foreach (var mod in Modifications.Values.Cast<ChemicalFormulaModification>())
                 {
                     writer.WriteStartElement("Modification");
                     writer.WriteAttributeString("name", mod.Name);
-                    writer.WriteAttributeString("isDefault", mod.IsDefault.ToString());
-                    writer.WriteAttributeString("isAminoAcid", mod.IsAminoAcid.ToString());
                     writer.WriteElementString("ChemicalFormula", mod.ChemicalFormula.ToString());
                     foreach (ModificationSites site in mod.Sites.GetActiveSites())
                     {

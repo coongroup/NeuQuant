@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using CSMSL;
@@ -23,7 +24,7 @@ namespace NeuQuant
             modListBox.DataSource = NeuQuantForm.CurrentModifications;
             experimentsListBox.DataSource = NeuQuantForm.CurrentExperiments;
         }
-        
+     
         void removeButton_Click2(object sender, EventArgs e)
         {
             var b = sender as Button;
@@ -51,7 +52,6 @@ namespace NeuQuant
         private void createChannelButton_Click(object sender, EventArgs e)
         {
             string modName = modNameBox.Text;
-            bool isAmino = aminoAcidRadioButton.Checked;
             string formula = formulaBox.Text;
             var masterSites = ModificationSites.None;
             foreach (var item in siteListBox.CheckedItems)
@@ -60,10 +60,10 @@ namespace NeuQuant
                 masterSites |= site;
             }
 
-            CreateNewMod(modName, formula, masterSites, isAmino);
+            CreateNewMod(modName, formula, masterSites);
         }
 
-        private void CreateNewMod(string modName, string formula, ModificationSites sites, bool isAminoAcid)
+        private void CreateNewMod(string modName, string formula, ModificationSites sites)
         {
             //logic to handle adding a channel included here
             if (string.IsNullOrEmpty(modName))
@@ -72,7 +72,8 @@ namespace NeuQuant
                 return;
             }
 
-            var newMod = new NeuQuantModification(new ChemicalFormula(formula), modName, sites, isAminoAcid);
+        
+            var newMod = new ChemicalFormulaModification(formula, modName, sites);
 
             Reagents.AddModification(newMod);
         }
@@ -94,12 +95,11 @@ namespace NeuQuant
 
         private void UpdateMods()
         {
-            var mod = modListBox.SelectedValue as NeuQuantModification;
+            var mod = modListBox.SelectedValue as ChemicalFormulaModification;
 
             if (mod == null)
                 return;
-
-            aminoAcidRadioButton.Checked = mod.IsAminoAcid;
+          
             formulaBox.Text = mod.ChemicalFormula.ToString(" ");
                 
             for (int i = 0; i < siteListBox.Items.Count; i++)
@@ -147,19 +147,12 @@ namespace NeuQuant
         {
             if (e.KeyCode != Keys.Delete)
                 return;
-      
-            var mod = modListBox.SelectedValue as NeuQuantModification;
+
+            var mod = modListBox.SelectedValue as Modification;
 
             if (mod == null)
                 return;
-                //Find associated Isotopolgues;
-
-            if (mod.IsDefault)
-            {
-                MessageBox.Show(mod+" is a default modification and cannot be deleted", "Cannot Delete",MessageBoxButtons.OK,MessageBoxIcon.Information);
-                return;
-            }
-
+             
 
             var isotopoglues = new List<ExperimentalSet>();
 
@@ -205,13 +198,29 @@ namespace NeuQuant
                 return;
 
             int index = listbox.IndexFromPoint(e.X, e.Y);
-            var item = listbox.Items[index];
-            DragDropEffects dde = DoDragDrop(item, DragDropEffects.All);
+            if (index < 0 || index > listbox.Items.Count - 1)
+                return;
 
-            //if (dde == DragDropEffects.All)
-            //{
-            //    listBox1.Items.RemoveAt(listBox1.IndexFromPoint(e.X, e.Y));
-            //} 
+            var item = listbox.Items[index];
+            if(item != null)
+                DoDragDrop(item, DragDropEffects.All);
+        }
+
+        private void formulaBox_TextChanged(object sender, EventArgs e)
+        {
+            string formula = formulaBox.Text;
+            if (ChemicalFormula.IsValidChemicalFormula(formula))
+            {
+                label1.ForeColor = Color.Black;
+                textBox2.Text = new ChemicalFormula(formula).MonoisotopicMass.ToString("F5");
+                createChannelButton.Enabled = true;
+            }
+            else
+            {
+                label1.ForeColor = Color.Red;
+                textBox2.Text = "n/a";
+                createChannelButton.Enabled = false;
+            }
         }
     }
 }

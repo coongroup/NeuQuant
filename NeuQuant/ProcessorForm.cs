@@ -65,7 +65,7 @@ namespace NeuQuant
             //if (numericUpDown3.Enabled)
             //    minResolution = (double) numericUpDown3.Value;
 
-            var processor = new Processor(nqFile, analysisName, numberOfisotopes, minRtBounds, maxRtBounds, minResolution, checkIsotopicDistribution: checkIsotopicDistribution, noiseBandCap: noiseBandCap,
+            var processor = new Processor(nqFile, analysisName, numberOfisotopes, minRtBounds, maxRtBounds, resolution: minResolution, checkIsotopicDistribution: checkIsotopicDistribution, noiseBandCap: noiseBandCap,
                 minSN: minSN, maxSN: maxSN, isotopicDistributionPercentError: isoPercentError, lowerSpacingPercent:lowSpacingPercent, upperSpacingPercent: highSpacingPercent);
             return processor;
         }
@@ -87,7 +87,7 @@ namespace NeuQuant
             double minResolution = processor.MinimumResolution;
             
             checkedListBox1.DataSource = new BindingList<double>(processor.NqFile.GetUniqueResolutions().ToList());
-            checkedListBox1.SetItemChecked(0, true);
+  
 
             for (int i = 0; i < checkedListBox1.Items.Count; i++)
             {

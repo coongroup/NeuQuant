@@ -31,7 +31,7 @@ namespace NeuQuant.Processing
             }
 
             NqFile.EndTranscation();
-           
+            OnMessage("Finished");
             OnProgress(0);
         }
 
