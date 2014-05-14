@@ -85,10 +85,80 @@ namespace NeuQuant
 
         public Dictionary<Peptide, double> Quantify(bool noiseBandCap = true, double noiseLevel = 3)
         {
+            // Perform initial filtering of measurements, using complete sets to define appropriate ppm deviation & maximum intensity
+
+            // Compile list of ppm errors from complete measurements
+            // Also, find maximum intensity across all complete measurements
+            bool useCompleteMeasurementsOnly = true;
+            double maximumCompleteIntensity = 0;
+            Dictionary<Peptide, DoubleRange> ppmTolerances = new Dictionary<Peptide, DoubleRange>();
+            foreach (var channel in Peptide.QuantifiableChannels.Values)
+            {
+                IRange<int> range;
+                if (_featureBounds.TryGetValue(channel, out range))
+                {
+                    List<double> ppmErrors = new List<double>();
+                    range = new Range<int>(0, _features.Count - 1);
+
+                    for (int i = range.Minimum; i < range.Maximum; i++)
+                    {
+                        var feature = _features[i];
+                        foreach (var ppmAndIntensity in feature.GetChannelMassErrorAndItensity(channel, useCompleteMeasurementsOnly, noiseBandCap, noiseLevel))
+                        {
+                            ppmErrors.Add(ppmAndIntensity.Item1);
+                            if (ppmAndIntensity.Item2 > maximumCompleteIntensity) maximumCompleteIntensity = ppmAndIntensity.Item2;
+                        }
+                    }
+
+                    if (ppmErrors.Count > 2)
+                    {
+                        double meanPPM = ppmErrors.Average();
+                        double stdDevPPM = ppmErrors.StdDev();
+
+                        DoubleRange ppmTolerance = new DoubleRange(meanPPM - stdDevPPM * 2, meanPPM + stdDevPPM * 2);
+
+                        ppmTolerances.Add(channel, ppmTolerance);
+                    }
+                    else
+                    {
+                        ppmTolerances.Add(channel, new DoubleRange(-15, +15));
+                    }
+                }
+            }
+
+            // For each channel, eliminate peaks outside the ppm tolerance and find the maximum overall intensity
+            useCompleteMeasurementsOnly = false;
+            Dictionary<Peptide, double> maximumIntensities = new Dictionary<Peptide, double>();
+            foreach (var channel in Peptide.QuantifiableChannels.Values)
+            {
+                maximumIntensities.Add(channel, 0);
+                IRange<int> range;
+                if (_featureBounds.TryGetValue(channel, out range))
+                {
+                    range = new Range<int>(0, _features.Count - 1);
+                    for (int i = range.Minimum; i < range.Maximum; i++)
+                    {
+                        var feature = _features[i];
+                        foreach (var ppmAndIntensity in feature.GetChannelMassErrorAndItensityAndIsotope(channel, useCompleteMeasurementsOnly, noiseBandCap, noiseLevel))
+                        {
+                            if (!ppmTolerances[channel].Contains(ppmAndIntensity.Item1)) 
+                            {
+                                feature.EliminatePeak(channel, ppmAndIntensity.Item3);
+                                continue;
+                            }
+                            if (ppmAndIntensity.Item2 > maximumIntensities[channel]) maximumIntensities[channel] = ppmAndIntensity.Item2;
+                        }
+                    }
+                }
+            }
+
+            // Perform final quantitation using complete and validated incomplete sets of measurements (minimum of 3 measurements per channel)
             Dictionary<Peptide, double> quant = new Dictionary<Peptide, double>();
             foreach (var channel in Peptide.QuantifiableChannels.Values)
             {
-             
+                double threshold = maximumIntensities[channel] / (2 * Math.E);
+                double channelIntensity = 0;
+                int avg = 0;
                 IRange<int> range;
                 if (!_featureBounds.TryGetValue(channel, out range))
                 {
@@ -97,57 +167,45 @@ namespace NeuQuant
                     continue;
                 }
 
-                List<double> ppmErrors = new List<double>();
-                List<double> intensities = new List<double>();
-              
+                range = new Range<int>(0, _features.Count - 1);
+
                 for (int i = range.Minimum; i < range.Maximum; i++)
                 {
                     var feature = _features[i];
-                    foreach (var ppmAndIntensity in feature.GetChannelMassErrorAndItensity(channel, noiseBandCap, noiseLevel))
+                    foreach (var ppmAndIntensity in feature.GetChannelMassErrorAndItensity(channel, useCompleteMeasurementsOnly, noiseBandCap, noiseLevel))
                     {
-                        ppmErrors.Add(ppmAndIntensity.Item1);
-                        intensities.Add(ppmAndIntensity.Item2);
+                        if (!double.IsNaN(ppmAndIntensity.Item2) && ppmAndIntensity.Item2 >= threshold)
+                        {
+                            channelIntensity += ppmAndIntensity.Item2;
+                            avg++;
+                        }
                     }
                 }
 
-                if (intensities.Count == 0)
+                if (channelIntensity == 0)
                 {
                     // Noise band cap this channel if requested
                     quant[channel] = noiseBandCap ? noiseLevel : 0;
                     continue;
                 }
 
-                double meanPPM = ppmErrors.Average();
-                double stdDevPPM = ppmErrors.StdDev();
+                // TODO How to only use complete sets of measurements for ppm calculation and for setting max intensity observed for complete sets
 
-                DoubleRange ppmTolerance = new DoubleRange(meanPPM - stdDevPPM*2, meanPPM + stdDevPPM*2);
+                // TODO Define max intensity for each channel based on all measurements that meet the ppm and intensity thresholds above
 
-                double maxIntensity = 0;
-                for (int i = 0; i < ppmErrors.Count; i++)
-                {
-                    double ppm = ppmErrors[i];
-                    if (!ppmTolerance.Contains(ppm)) 
-                        continue;
-                    double intensity = intensities[i];
-                    if (intensity > maxIntensity)
-                    {
-                        maxIntensity = intensity;
-                    }
-                }
-
-                double threshold = maxIntensity/(Math.E*Math.E);
-                double channelIntensity = 0;
-                int avg = 0;
-                for (int i = 0; i < ppmErrors.Count; i++)
-                {
-                    double ppm = ppmErrors[i];
-                    double intensity = intensities[i];
-                    if ((ppmTolerance.Contains(ppm) || double.IsNaN(ppm)) && intensity > threshold)
-                    {
-                        channelIntensity += intensity;
-                        avg++;
-                    }
-                }
+                //double threshold = maxIntensity/(Math.E*Math.E);
+                //double channelIntensity = 0;
+                //int avg = 0;
+                //for (int i = 0; i < ppmErrors.Count; i++)
+                //{
+                //    double ppm = ppmErrors[i];
+                //    double intensity = intensities[i];
+                //    if ((ppmTolerance.Contains(ppm) || double.IsNaN(ppm)) && intensity > threshold)
+                //    {
+                //        channelIntensity += intensity;
+                //        avg++;
+                //    }
+                //}
 
                 //double maxIntensity = intensities.Max();
                 //double threshold = maxIntensity/(2*Math.E);
@@ -158,7 +216,11 @@ namespace NeuQuant
                 //    channelIntensity = noiseLevel;
                 //}
 
-                quant[channel] = channelIntensity / avg;
+                if (avg > 2) quant[channel] = channelIntensity / avg;
+                else
+                {
+                    quant[channel] = noiseBandCap ? noiseLevel : 0;
+                }
             }
             return quant;
         }
@@ -331,8 +393,8 @@ namespace NeuQuant
                         double largestMZ = peptidesInCluster.Values[numberOfPeptidesInCluster - 1].ToMz(ChargeState, isotope);
                         
                         // Add a little wiggle room for both the smallest and largest MZ
-                        double minMz = DoubleRange.FromPPM(smallestMZ, 15).Minimum;
-                        double maxMZ = DoubleRange.FromPPM(largestMZ, 15).Maximum;
+                        double minMz = DoubleRange.FromPPM(smallestMZ, 30).Minimum;
+                        double maxMZ = DoubleRange.FromPPM(largestMZ, 30).Maximum;
 
                         // Construct the m/z range of interest
                         MzRange mzRange = new MzRange(minMz, maxMZ);

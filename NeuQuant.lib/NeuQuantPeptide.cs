@@ -167,7 +167,7 @@ namespace NeuQuant
                 Peptide channel = new Peptide(peptide, true);
                 foreach (Modification mod in sample.Condition)
                 {
-                    channel.SetModification(mod);
+                    channel.SetModification(mod); // Todo look at how this affects the code
                 }
 
                 if (!QuantifiableChannels.ContainsKey(channel.MonoisotopicMass))
@@ -262,6 +262,8 @@ namespace NeuQuant
                     quant.AddQuantitation(sample, quantitationValue);
                 }
             }
+
+            // TODO Add minimum number of "measurements" (i.e., scans, isotopes, charge states) needed for quant
 
             return quant;
         }
