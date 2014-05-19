@@ -167,7 +167,7 @@ namespace NeuQuant
                 Peptide channel = new Peptide(peptide, true);
                 foreach (Modification mod in sample.Condition)
                 {
-                    channel.SetModification(mod);
+                    channel.AddModification(mod);
                 }
 
                 if (!QuantifiableChannels.ContainsKey(channel.MonoisotopicMass))
