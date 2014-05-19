@@ -84,6 +84,7 @@ namespace NeuQuant.Processing
 
                 // Get the lightest mass
                 double mass = peptide.QuantifiableChannels.Values[0].MonoisotopicMass;
+                // TODO evaluate multiple charge states for resolvability
                 int bestCharge = peptide.IdentifiedChargeStates.Min();
                 double theoSpacing = TheoreticalSpacing(mass, bestCharge);
                 double spacing = peptide.BiggestThSpacing;

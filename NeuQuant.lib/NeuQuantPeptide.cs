@@ -263,6 +263,8 @@ namespace NeuQuant
                 }
             }
 
+            // TODO Add minimum number of "measurements" (i.e., scans, isotopes, charge states) needed for quant
+
             return quant;
         }
        

@@ -116,7 +116,7 @@ namespace NeuQuant
             return totalIntensity;
         }
 
-        public IEnumerable<Tuple<double, double>> GetChannelMassErrorAndItensity(Peptide peptide, bool noiseBandCap = true, double noiseLevel = 3)
+        public IEnumerable<Tuple<double, double>> GetChannelMassErrorAndItensity(Peptide peptide, bool completeOnly = true, bool noiseBandCap = true, double noiseLevel = 3)
         {
             IPeak[] peaks;
             if (!_isotopes.TryGetValue(peptide, out peaks))
@@ -126,6 +126,12 @@ namespace NeuQuant
 
             for (int i = 0; i < NumberOfIsotopes; i++)
             {
+                // Skip if the isotope is not complete (i.e. has missing channels)
+                if (completeOnly && !IsIsotopeComplete(i))
+                {
+                    continue;
+                }
+                
                 // Skip if the isotope is not valid (i.e. == 0)
                 if (!IsIsotopeValid(i))
                 {
@@ -144,8 +150,44 @@ namespace NeuQuant
                     double ppm = Tolerance.GetTolerance(peak.X, mz, ToleranceType.PPM);
                     yield return new Tuple<double, double>(ppm, peak.Y);
                 }
+            }          
+        }
+
+        public IEnumerable<Tuple<double, double, int>> GetChannelMassErrorAndItensityAndIsotope(Peptide peptide, bool completeOnly = true, bool noiseBandCap = true, double noiseLevel = 3)
+        {
+            IPeak[] peaks;
+            if (!_isotopes.TryGetValue(peptide, out peaks))
+            {
+                yield break;
             }
-             
+
+            for (int i = 0; i < NumberOfIsotopes; i++)
+            {
+                // Skip if the isotope is not complete (i.e. has missing channels)
+                if (completeOnly && !IsIsotopeComplete(i))
+                {
+                    continue;
+                }
+
+                // Skip if the isotope is not valid (i.e. == 0)
+                if (!IsIsotopeValid(i))
+                {
+                    continue;
+                }
+
+                IPeak peak = peaks[i];
+                if (peak == null)
+                {
+                    //if (noiseBandCap)
+                    //    yield return new Tuple<double, double>(double.NaN, noiseLevel);
+                }
+                else
+                {
+                    double mz = peptide.ToMz(ChargeState, i);
+                    double ppm = Tolerance.GetTolerance(peak.X, mz, ToleranceType.PPM);
+                    yield return new Tuple<double, double, int>(ppm, peak.Y, i);
+                }
+            }
         }
 
         public double GetChannelIntensity(Peptide peptide, int isotope)
@@ -260,6 +302,17 @@ namespace NeuQuant
             return (_usedIsotopes & mask) != 0 && (_spacingIsotopes & mask) != 0;
         }
 
+        private bool IsIsotopeComplete(int isotope)
+        {
+            if (ChannelsPresent != ParentSet.Peptide.NumberOfChannels) return false;
+            int count = 0;
+            foreach (IPeak[] peaks in _isotopes.Values)
+            {
+                if (peaks[isotope] != null) count++;
+            }
+            return count == ParentSet.Peptide.NumberOfChannels;
+        }
+
         public int AssignPeaks(NeuQuantSpectrum spectrum, Peptide channel, int isotope, DoubleRange mzRange)
         {
             // Cannot assign what does not exist
@@ -292,6 +345,7 @@ namespace NeuQuant
                 return 0;
 
             // Only one peak, assigned based on smallest ppm error
+            // TODO How to handle 2 out of 3 peaks found for 3plex or 4plex
             if (spectrum.Count == 1)
             {
                 // Try to assign the only peak by ppm
@@ -306,6 +360,8 @@ namespace NeuQuant
             {
                 _spacingIsotopes |= (1 << isotope);
             }
+
+            // TODO How to mark isotopes with incomplete sets of peaks that have correct spacing
 
             return channelsAssigned;
         }
@@ -401,6 +457,8 @@ namespace NeuQuant
             // No peaks passed the spacing, try to save the most intense
             if (count == 0)
             {
+                // TODO How to flag these for later to make sure they are not used for quant
+
                 return AssignPeakByPPM(spectrum.GetBasePeak(), channels, isotope, maxTolerance, correctSpacingTolerance) ? 1 : 0;
             }
 
@@ -452,6 +510,11 @@ namespace NeuQuant
             return numberOfChannelsAssigned;
         }
 
+        public void EliminatePeak(Peptide channel, int isotope)
+        {
+            _isotopes[channel][isotope] = null;
+        }
+        
         public override string ToString()
         {
             return string.Format("RT: {0:F4} Total Intensity: {1:F4} Channels Detected: {2} Isotopes Detected: {3} Usuable Isotopes: {4}", RetentionTime, GetTotalIntensity(), ChannelsPresent, TotalIsotopesDetected, ValidIsotopes);
