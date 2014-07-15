@@ -58,7 +58,7 @@ namespace NeuQuant.IO
         {
             FilePath = filePath;
             _dbConnection = new SQLiteConnection(@"Data Source=" + filePath);
-            _insertFile = new SQLiteCommand(@"INSERT INTO files (filePath, description) VALUES (@filePath, @description)", _dbConnection);
+            _insertFile = new SQLiteCommand(@"INSERT INTO files (filePath, fileType, description) VALUES (@filePath, @fileType, @description)", _dbConnection);
             _selectFile = new SQLiteCommand("SELECT id FROM files WHERE filePath = @filePath LIMIT 1", _dbConnection);
             _insertSpectrum = new SQLiteCommand(@"INSERT INTO spectra (fileID, scannumber, retentionTime, msnOrder, resolution, injectionTime, spectrum) VALUES (@fileID, @scannumber,@retentionTime,@msnOrder,@resolution,@injectionTime,@spectrum)", _dbConnection);
             _selectSpectrum = new SQLiteCommand(@"SELECT * FROM spectra WHERE msnOrder = @msnOrder AND fileID = @fileID AND retentionTime BETWEEN @minRT AND @maxRT AND resolution >= @minResolution", _dbConnection);
@@ -105,9 +105,10 @@ namespace NeuQuant.IO
             return (long)o;
         }
 
-        public long InsertFile(string filePath, string description = "")
+        public long InsertFile(string filePath, string fileType, string description = "")
         {
             _insertFile.Parameters.AddWithValue("@filePath", filePath);
+            _insertFile.Parameters.AddWithValue("@fileType", fileType);
             _insertFile.Parameters.AddWithValue("@description", description);
             _insertFile.ExecuteScalar();
 
@@ -270,6 +271,28 @@ namespace NeuQuant.IO
                 currentPeptide.AddPeptideSpectrumMatch(psm, Samples);
             }
             yield return currentPeptide;
+        }
+
+        public double GetResolutionMZ()
+        {
+            // Read instrument name
+            var selectFiles = new SQLiteCommand(@"SELECT id, description
+                                                FROM files f
+                                                WHERE fileType <> 'ThermoRawFile'", _dbConnection);
+
+            string name = "";
+            using (var reader = selectFiles.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    name = reader["description"].ToString();
+                }             
+            }
+            
+            if (name == "Orbitrap Fusion" | name == "Q Exactive")
+                return 200;
+            else
+                return 400;
         }
 
         private IEnumerable<PeptideSpectrumMatch> GetPsms()
@@ -549,7 +572,7 @@ namespace NeuQuant.IO
                 rawFile.Open();
                 using (var transcation = _dbConnection.BeginTransaction())
                 {
-                    long fileID = InsertFile(rawFile.FilePath, "Thermo Raw File");
+                    long fileID = InsertFile(rawFile.FilePath, "Thermo Raw File", rawFile.GetInstrumentName());
 
                     // Loop over every spectra
                     for (int i = rawFile.FirstSpectrumNumber; i <= rawFile.LastSpectrumNumber; i++)

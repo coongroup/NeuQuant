@@ -71,7 +71,8 @@ namespace NeuQuant.IO
                 // File Information
                 sql = @"CREATE TABLE IF NOT EXISTS files (
                         id INTEGER PRIMARY KEY ASC, 
-                        filePath TEXT UNIQUE ON CONFLICT IGNORE, 
+                        filePath TEXT UNIQUE ON CONFLICT IGNORE,
+                        fileType TEXT, 
                         description TEXT)";
                 new SQLiteCommand(sql, conn).ExecuteNonQuery();
 

@@ -27,5 +27,18 @@ namespace NeuQuant
             }
         }
 
+        public int SamplesQuantified(double minimumValue = 3.0, int numMeasurements = 2)
+        {
+            int count = 0;
+            double minTotalIntensity = minimumValue * numMeasurements * Peptide.FeatureSets.Count;
+
+            foreach (double quant in Quantitation.Values)
+            {
+                if (quant > minTotalIntensity) count++;
+            }
+
+            return count;
+        }
+
     }
 }
