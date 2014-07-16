@@ -4,7 +4,7 @@ using CSMSL;
 
 namespace NeuQuant
 {
-    public class NeuQuantSpectrum : Spectrum, ISpectrum, ISpectrumTime
+    public class NeuQuantSpectrum : Spectrum, ISpectrumTime
     {
         double ISpectrumTime.Time
         {
@@ -26,9 +26,9 @@ namespace NeuQuant
             : base(spectrum) { }
 
         public NeuQuantSpectrum(byte[] bytes)
-            : base(ConvertBytesToSpectrum(bytes, bytes.IsCompressed()))
+            : base(bytes)
         {
-          
+            
         }
 
         public static NeuQuantSpectrum Load(ThermoRawFile rawFile, int scannumber)
@@ -42,7 +42,7 @@ namespace NeuQuant
             }
             else
             {
-                spectrum = rawFile.GetReadOnlyMZSpectrum(scannumber);
+                spectrum = rawFile.GetSpectrum(scannumber);
             }
             NeuQuantSpectrum nqSpectrum = new NeuQuantSpectrum(spectrum);
             nqSpectrum.RawFile = rawFile;

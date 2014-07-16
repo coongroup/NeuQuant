@@ -52,7 +52,7 @@ namespace NeuQuant.Processing
             NumberOfIsotopesToQuantify = isotopesToQuantify;
             MinimumRtDelta = minRtDelta;
             MaximumRtDelta = maxRtDelta;
-            MS2Tolerance = new Tolerance(ToleranceType.PPM, 10);
+            MS2Tolerance = new Tolerance(ToleranceUnit.PPM, 10);
             MinimumResolution = resolution;
             MinimumSN = minSN;
             MaximumSN = maxSN;
