@@ -54,6 +54,8 @@ namespace NeuQuant
                 }
             }
 
+            double resolutionAtMZ = nqFile.GetResolutionMZ();
+
             double minRtBounds = (double) numericUpDown2.Value;
             double maxRtBounds = (double) numericUpDown3.Value;
             double minSN = (double) numericUpDown5.Value;
@@ -65,7 +67,7 @@ namespace NeuQuant
             //if (numericUpDown3.Enabled)
             //    minResolution = (double) numericUpDown3.Value;
 
-            var processor = new Processor(nqFile, analysisName, numberOfisotopes, minRtBounds, maxRtBounds, resolution: minResolution, checkIsotopicDistribution: checkIsotopicDistribution, noiseBandCap: noiseBandCap,
+            var processor = new Processor(nqFile, analysisName, numberOfisotopes, minRtBounds, maxRtBounds, resolutionAtMZ, resolution: minResolution, checkIsotopicDistribution: checkIsotopicDistribution, noiseBandCap: noiseBandCap,
                 minSN: minSN, maxSN: maxSN, isotopicDistributionPercentError: isoPercentError, lowerSpacingPercent:lowSpacingPercent, upperSpacingPercent: highSpacingPercent);
             return processor;
         }

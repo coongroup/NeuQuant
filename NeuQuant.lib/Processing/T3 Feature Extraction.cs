@@ -105,6 +105,10 @@ namespace NeuQuant.Processing
 
                     // Grab all the spectra within the RT bounds, +/- the RT deltas
                     var spectraInTime = GetSpectra(_allSpectra, _times, minTime - MinimumRtDelta, maxTime + MaximumRtDelta);
+                    //foreach (var spectrum in spectraInTime)
+                    //{
+                    //    int i = 0;
+                    //}
 
                     // Shrink the spectra to only contain the m/z range of possible interest, memory optimization
                     List<NeuQuantSpectrum> spectra = ShrinkSpectra(spectraInTime, range).ToList();

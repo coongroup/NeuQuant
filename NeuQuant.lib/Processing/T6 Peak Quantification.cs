@@ -15,14 +15,19 @@ namespace NeuQuant.Processing
             OnProgress(0);
 
             int count = 0;
+            int numMeasurementsRequired = 2;
 
             NqFile.BeginTransaction();
 
             foreach (var peptide in peptides)
             {
-                var quant = peptide.Quantify(noiseBandCap, noiseLevel);
+                var quant = peptide.Quantify(noiseBandCap, noiseLevel, numMeasurementsRequired);
 
-                NqFile.InsertQuantitation(this, quant);
+                // TODO Only report quantitation for peptides with one missing channel
+                if (quant.SamplesQuantified(noiseLevel, numMeasurementsRequired) >= peptide.NumberOfChannels / 2)
+                {
+                    NqFile.InsertQuantitation(this, quant);
+                }
                 count++;
                 if (count % 100 == 0)
                 {

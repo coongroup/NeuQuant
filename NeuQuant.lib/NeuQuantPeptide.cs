@@ -243,13 +243,13 @@ namespace NeuQuant
             return Peptide.ToString();
         }
 
-        public NeuQuantQuantitation Quantify(bool noiseBandCap, double noiseLevel)
+        public NeuQuantQuantitation Quantify(bool noiseBandCap, double noiseLevel, int numMeasurements)
         {
             NeuQuantQuantitation quant = new NeuQuantQuantitation(this, channelsToSamples.Count);
 
             foreach (var featureSet in FeatureSets)
             {
-                Dictionary<Peptide, double> featureSetQuant = featureSet.Quantify(noiseBandCap, noiseLevel);
+                Dictionary<Peptide, double> featureSetQuant = featureSet.Quantify(noiseBandCap, noiseLevel, numMeasurements);
                 foreach (KeyValuePair<Peptide, double> channelQuant in featureSetQuant)
                 {
                     var channel = channelQuant.Key;
