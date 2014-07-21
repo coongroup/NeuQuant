@@ -25,7 +25,7 @@ namespace NeuQuant.Processing
         public void FindPeaks(NeuQuantFeatureSet featureSet)
         {
             featureSet.FindPeaks(MS2Tolerance, NumberOfIsotopesToQuantify, SystematicPPMError, UseIsotopicDistribution, IsotopicDistributionPercentError, LowerSpacingPercent, UpperSpacingPercent);
-            featureSet.FindElutionProfile(3);
+            featureSet.FindElutionProfile(1);
         }
         
     }

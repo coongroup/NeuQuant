@@ -42,6 +42,7 @@ namespace NeuQuant
             NumberOfIsotopes = numberOfIsotopes;
 
             // Find best psm
+            // TODO Best PSM should be based also on resolvability (for NeuCode)
             double bestScore = double.MaxValue;
             BestPSM = null;
             foreach (var psm in PSMs)
@@ -275,14 +276,16 @@ namespace NeuQuant
             }
 
             var chrom = new Chromatogram(times, intensities).Smooth(SmoothingType.BoxCar, smoothingPts);
+            Range<double> width;
 
-            var apex = chrom.FindNearestApex(rt, 1); // Changed to 1 skipped point
+            var apex = chrom.FindNearestApex(rt, 3);
             //var apex = chrom.GetApex(rt - 0.2, rt + 0.2);
+            width = chrom.GetPeakWidth(apex.Time, 0.1);
 
-            Range<double> width = chrom.GetPeakWidth(apex.Time, 0.1);
 
             double minRT = width.Minimum;
             double maxRT = width.Maximum;
+
 
             for (i = 0; i < _features.Count; i++)
             {
@@ -374,8 +377,7 @@ namespace NeuQuant
             // If no features, there is no profile to find
             if (_features == null || _features.Count == 0)
                 return;
-            
-            // The best psm Retention Time
+
             double bestRT = BestPSM.RetentionTime;
 
             // Find the peak bounds
