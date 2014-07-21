@@ -444,7 +444,7 @@ namespace NeuQuant
                         double mz = peptide.ToMz(ChargeState, isotope);
            
                         // Construct the m/z range of interest
-                        MzRange mzRange = new MzRange(mz, new Tolerance(ToleranceType.PPM, peakTolerance.Value * 2.0));
+                        MzRange mzRange = new MzRange(mz, new Tolerance(ToleranceUnit.PPM, peakTolerance.Value * 2.0));
 
                         // Extract the m/z range from the mini spectrum into its own, even smaller, tiny spectrum
                         // The mini spectrum may contain multiple clusters, so this step further divides that spectrum
