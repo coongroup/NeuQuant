@@ -508,7 +508,7 @@ namespace NeuQuant
                         var tinySpectrum = miniSpectrum.Extract(mzRange, systematicThError);
 
                         // Try to assign the peaks to the correct channels
-                        feature.AssignPeaks(tinySpectrum, peptidesInCluster.Values, expectedSpacings, isotope, peakTolerance, new Tolerance(ToleranceType.PPM, 5), lowerSpacingPercent, upperSpacingPercent);
+                        feature.AssignPeaks(tinySpectrum, peptidesInCluster.Values, expectedSpacings, isotope, peakTolerance, new Tolerance(ToleranceUnit.PPM, 5), lowerSpacingPercent, upperSpacingPercent);
                     }
                     
                     // Once all the isotopes peaks are assigned, perform the isotopic distribution check
@@ -557,7 +557,7 @@ namespace NeuQuant
                     IPeak peak = miniSpectrum.GetClosestPeak(range);
                     if (peak != null)
                     {
-                        yield return Tolerance.GetTolerance(peak.X, mz, ToleranceType.PPM);
+                        yield return Tolerance.GetTolerance(peak.X, mz, ToleranceUnit.PPM);
                     }
                 }
             }

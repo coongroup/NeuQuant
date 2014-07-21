@@ -192,7 +192,7 @@ namespace NeuQuant
                 else
                 {
                     double mz = peptide.ToMz(ChargeState, i);
-                    double ppm = Tolerance.GetTolerance(peak.X, mz, ToleranceType.PPM);
+                    double ppm = Tolerance.GetTolerance(peak.X, mz, ToleranceUnit.PPM);
                     yield return new Tuple<double, double>(ppm, peak.Y);
                 }
             }          
@@ -235,7 +235,7 @@ namespace NeuQuant
                 else
                 {
                     double mz = peptide.ToMz(ChargeState, i);
-                    double ppm = Tolerance.GetTolerance(peak.X, mz, ToleranceType.PPM);
+                    double ppm = Tolerance.GetTolerance(peak.X, mz, ToleranceUnit.PPM);
                     yield return new Tuple<double, double, int>(ppm, peak.Y, i);
                 }
             }
@@ -318,7 +318,8 @@ namespace NeuQuant
             double maxPercent = 1 + percentError;
 
             // Get the c13 isotopic distribution, good approximation
-            double[] distribution = formula.GetIsotopicDistribution(NumberOfIsotopes);
+
+            double[,] distribution = formula.GetIsotopicDistribution(0.5, NumberOfIsotopes);
 
             // Loop over each other isotope
             for (int c13 = 1; c13 < NumberOfIsotopes; c13++)
@@ -332,10 +333,10 @@ namespace NeuQuant
                     continue;
                 }
 
-                // Calculate the relative abundance based on the monoisotopic intensity
-                double relativeAbundance = monoIntensity * distribution[c13];
-                double min = relativeAbundance * minPercent;
-                double max = relativeAbundance * maxPercent;
+                // Calculate the realtive abundance based on the monoisotopic intensity
+                double relativeAbundance = monoIntensity * distribution[1, c13];
+                double min = relativeAbundance*minPercent;
+                double max = relativeAbundance*maxPercent;
 
                 if (signal >= min && signal <= max)
                 {

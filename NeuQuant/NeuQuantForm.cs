@@ -32,7 +32,7 @@ namespace NeuQuant
             return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         }
 
-        public static Color[] MasterColors = {Color.CornflowerBlue, Color.Sienna, Color.YellowGreen};
+        public static Color[] MasterColors = {Color.CornflowerBlue, Color.Sienna, Color.YellowGreen, Color.ForestGreen, Color.Firebrick, Color.DeepPink};
 
         public static readonly BindingList<Modification> CurrentModifications = new BindingList<Modification>();
         public static readonly BindingList<ExperimentalSet> CurrentExperiments = new BindingList<ExperimentalSet>();
